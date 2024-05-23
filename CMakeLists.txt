@@ -40,7 +40,7 @@ target_include_directories(
 # Setup Dependencies
 # --------------------------------------------------------------------------------------------------------
 
-include("cmake/cpm.cmake")
+include(cmake/cpm.cmake)
 
 CPMAddPackage(
   NAME PackageProject
@@ -48,8 +48,10 @@ CPMAddPackage(
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
 # --------------------------------------------------------------------------------------------------------
-# Formatting Target
+# CMake Utilities
 # --------------------------------------------------------------------------------------------------------
+
+include(utils/format.cmake)
 
 include(utils/batch.cmake)
 include(utils/python.cmake)
