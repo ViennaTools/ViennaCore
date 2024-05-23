@@ -1,4 +1,4 @@
-function(viennacore_quick_examples FOLDER)
+function(viennacore_add_subdirs FOLDER)
   file(GLOB entries "*")
 
   foreach(entry IN LISTS ${entries})
@@ -7,9 +7,7 @@ function(viennacore_quick_examples FOLDER)
       continue()
     endif()
 
-    message(STATUS "Adding example ${entry}")
+    message(STATUS "Adding ${entry}")
     add_subdirectory(${entry})
   endforeach()
-
-  message(STATUS "Collected all examples")
 endfunction()
