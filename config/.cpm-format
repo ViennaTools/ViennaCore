@@ -2,7 +2,7 @@ parse:
   additional_commands:
     cpmaddpackage:
       pargs:
-        nargs: '*'
+        nargs: "*"
         flags: []
       spelling: CPMAddPackage
       kwargs: &cpmaddpackagekwargs
@@ -34,19 +34,19 @@ parse:
         OPTIONS: +
     cpmfindpackage:
       pargs:
-        nargs: '*'
+        nargs: "*"
         flags: []
       spelling: CPMFindPackage
       kwargs: *cpmaddpackagekwargs
     cpmdeclarepackage:
       pargs:
-        nargs: '*'
+        nargs: "*"
         flags: []
       spelling: CPMDeclarePackage
       kwargs: *cpmaddpackagekwargs
     packageproject:
       pargs:
-        nargs: '*'
+        nargs: "*"
         flags: []
       spelling: packageProject
       kwargs:

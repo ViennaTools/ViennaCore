@@ -25,8 +25,9 @@ set_target_properties(
 # --------------------------------------------------------------------------------------------------------
 
 target_include_directories(
-  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore>
-                            $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}>)
+  ${PROJECT_NAME}
+  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore>
+            $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}>)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
@@ -40,15 +41,10 @@ CPMAddPackage(
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
 # --------------------------------------------------------------------------------------------------------
-# Setup Tests
+# Formatting Target
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNACORE_BUILD_TESTS)
-  message(STATUS "[ViennaCore] Building Tests")
-
-  enable_testing()
-  add_subdirectory(tests)
-endif()
+include("cmake/format.cmake")
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target
