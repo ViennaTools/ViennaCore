@@ -10,4 +10,6 @@ function(viennacore_setup_binding NAME OUTPUT_DIR FLAGS DEPENDENCIES)
 
   install(TARGETS ${NAME} LIBRARY DESTINATION ${NAME})
   install(DIRECTORY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/" DESTINATION ${NAME})
+
+  message(STATUS "Added Python module '${NAME}'")
 endfunction()
