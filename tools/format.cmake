@@ -69,7 +69,8 @@ endif()
 set(ALL_FINE TRUE)
 
 foreach(file IN LISTS CMAKE_FILES)
-  execute_process(COMMAND ${CMAKE_FORMAT} -c=${CMAKE_FORMAT_CONFIG} -i ${file})
+  execute_process(COMMAND ${CMAKE_FORMAT} -c=${CMAKE_FORMAT_CONFIG} -i ${file}
+                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
@@ -85,7 +86,8 @@ foreach(file IN LISTS CMAKE_FILES)
 endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
-  execute_process(COMMAND ${CLANG_FORMAT} --style=file -i ${file})
+  execute_process(COMMAND ${CLANG_FORMAT} --style=file -i ${file}
+                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
