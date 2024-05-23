@@ -1,19 +1,19 @@
-set(VIENNACORE_SANITIZER_CANDIDATES
-    -fno-omit-frame-pointer
-    # GCC / Clang
-    -fsanitize=undefined
-    -fsanitize=address
-    -fsanitize=thread
-    # Clang
-    -fsanitize=memory
-    # GCC
-    -fsanitize=leak
-    # MSVC
-    /fsanitize=address)
-
 function(viennacore_enable_sanitizer TARGET)
   include(CheckCompilerFlag)
   include(CheckLinkerFlag)
+
+  set(VIENNACORE_SANITIZER_CANDIDATES
+      -fno-omit-frame-pointer
+      # GCC / Clang
+      -fsanitize=undefined
+      -fsanitize=address
+      -fsanitize=thread
+      # Clang
+      -fsanitize=memory
+      # GCC
+      -fsanitize=leak
+      # MSVC
+      /fsanitize=address)
 
   foreach(flag IN LISTS VIENNACORE_SANITIZER_CANDIDATES)
     list(FIND VIENNACORE_SANITIZER_CANDIDATES "${flag}" INDEX)
