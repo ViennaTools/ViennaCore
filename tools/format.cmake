@@ -6,8 +6,10 @@ cmake_policy(SET CMP0009 NEW)
 # --------------------------------------------------------------------------------------------------------
 
 function(viennacore_check_changes FILE)
-  execute_process(COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color ${FILE}
-                  RESULT_VARIABLE RESULT)
+  execute_process(
+    COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color ${FILE}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    RESULT_VARIABLE RESULT)
 
   set(FILE_CHANGED
       ${RESULT}
