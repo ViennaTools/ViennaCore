@@ -6,8 +6,8 @@ cmake_policy(SET CMP0009 NEW)
 # --------------------------------------------------------------------------------------------------------
 
 function(check_changes FILE)
-  execute_process(COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color
-                          ${FILE} RESULT_VARIABLE RESULT)
+  execute_process(COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color ${FILE}
+                  RESULT_VARIABLE RESULT)
 
   set(FILE_CHANGED
       ${RESULT}
@@ -15,8 +15,8 @@ function(check_changes FILE)
 endfunction()
 
 function(get_root)
-  get_filename_component(PARENT_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
-                         DIRECTORY)
+  get_filename_component(PARENT_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR} DIRECTORY)
+
   set(ROOT_DIR
       ${PARENT_DIR}
       PARENT_SCOPE)
@@ -85,8 +85,7 @@ foreach(file IN LISTS CMAKE_FILES)
 endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
-  execute_process(COMMAND ${CLANG_FORMAT} --style=${CLANG_FORMAT_CONFIG} -i
-                          ${file})
+  execute_process(COMMAND ${CLANG_FORMAT} --style=${CLANG_FORMAT_CONFIG} -i ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()

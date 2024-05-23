@@ -33,9 +33,8 @@ set_target_properties(
 # --------------------------------------------------------------------------------------------------------
 
 target_include_directories(
-  ${PROJECT_NAME}
-  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore>
-            $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}>)
+  ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore>
+                            $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}>)
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Dependencies
