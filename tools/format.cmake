@@ -52,11 +52,9 @@ list(FILTER SOURCE_FILES INCLUDE REGEX ".*\\.(cpp|hpp)$")
 viennacore_get_root()
 
 set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cmake-format")
-set(CLANG_FORMAT_CONFIG "file:${ROOT_DIR}/config/.clang-format")
 
 message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
 message(STATUS "[Format] -- CMake-Format Config: '${CMAKE_FORMAT_CONFIG}'")
-message(STATUS "[Format] -- Clang-Format Config: '${CLANG_FORMAT_CONFIG}'")
 
 if(MODE STREQUAL "LIST")
   string(REPLACE ";" "\n-- " CMAKE_FILES "${CMAKE_FILES}")
@@ -87,7 +85,7 @@ foreach(file IN LISTS CMAKE_FILES)
 endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
-  execute_process(COMMAND ${CLANG_FORMAT} --style=${CLANG_FORMAT_CONFIG} -i ${file})
+  execute_process(COMMAND ${CLANG_FORMAT} --style=file -i ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
