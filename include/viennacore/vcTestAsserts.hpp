@@ -1,12 +1,12 @@
 #pragma once
 
-#include "vtVectorUtil.hpp"
+#include "vcVectorUtil.hpp"
 
 #ifdef _MSC_VER
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-#define VT_TEST_ASSERT(condition)                                              \
+#define VC_TEST_ASSERT(condition)                                              \
   {                                                                            \
     if (!(condition)) {                                                        \
       throw std::runtime_error(std::string(__FILE__) + std::string(":") +      \
@@ -17,7 +17,7 @@
     }                                                                          \
   }
 
-#define VT_TEST_ASSERT_ISCLOSE(first, second, eps)                             \
+#define VC_TEST_ASSERT_ISCLOSE(first, second, eps)                             \
   {                                                                            \
     if ((std::fabs(first - second) > eps)) {                                   \
       throw std::runtime_error(                                                \
@@ -29,7 +29,7 @@
     }                                                                          \
   }
 
-#define VT_TEST_ASSERT_ISNORMAL(first, second, eps)                            \
+#define VC_TEST_ASSERT_ISNORMAL(first, second, eps)                            \
   {                                                                            \
     if ((std::fabs(core::DotProduct(first, second)) > eps)) {                  \
       throw std::runtime_error(std::string(__FILE__) + std::string(":") +      \
@@ -40,7 +40,7 @@
     }                                                                          \
   }
 
-#define VT_RUN_ALL_TESTS                                                       \
+#define VC_RUN_ALL_TESTS                                                       \
   vtRunTest<double, 2>();                                                      \
   vtRunTest<double, 3>();                                                      \
   vtRunTest<float, 2>();                                                       \

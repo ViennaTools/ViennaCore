@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace vieTools {
+namespace viennacore {
 
 // Small function to print a progress bar ()
 inline void ProgressBar(size_t i, size_t finalCount = 100) {
@@ -23,4 +23,4 @@ inline void ProgressBar(size_t i, size_t finalCount = 100) {
   std::cout.flush();
 }
 
-} // namespace vieTools
+} // namespace viennacore

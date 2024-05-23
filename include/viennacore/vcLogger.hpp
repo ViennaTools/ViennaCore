@@ -1,10 +1,10 @@
 #pragma once
 
-#include "vtTimer.hpp"
+#include "vcTimer.hpp"
 
 #include <iostream>
 
-namespace vieTools {
+namespace viennacore {
 
 // verbosity levels:
 // 0 errors
@@ -148,4 +148,4 @@ public:
 // initialize static member of logger
 inline LogLevel Logger::logLevel = LogLevel::INFO;
 
-} // namespace vieTools
+} // namespace viennacore

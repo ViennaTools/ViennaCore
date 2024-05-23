@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace vieTools {
+namespace viennacore {
 
 template <class Clock = std::chrono::high_resolution_clock> struct Timer {
   using TimePoint = typename Clock::time_point;
@@ -24,4 +24,4 @@ template <class Clock = std::chrono::high_resolution_clock> struct Timer {
   }
 };
 
-}; // namespace vieTools
+}; // namespace viennacore
