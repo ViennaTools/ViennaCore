@@ -49,7 +49,7 @@ list(FILTER SOURCE_FILES INCLUDE REGEX ".*\\.(cpp|hpp)$")
 
 get_root()
 
-set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cpm-format")
+set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cmake-format")
 set(CLANG_FORMAT_CONFIG "file:${ROOT_DIR}/config/.clang-format")
 
 message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
