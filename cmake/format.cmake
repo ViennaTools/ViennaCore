@@ -3,7 +3,8 @@ find_program(CMAKE_FORMAT cmake-format)
 find_program(GIT_COMMAND git)
 
 set(FORMAT_NAME "format")
-set(CHECK_NAME "check-format")
+set(LIST_NAME "format-list")
+set(CHECK_NAME "format-check")
 
 if(NOT CMAKE_FORMAT
    OR NOT CLANG_FORMAT
@@ -37,6 +38,15 @@ add_custom_target(
   ${FORMAT_NAME}
   COMMAND
     ${CMAKE_COMMAND} -DMODE=FORMAT -DCLANG_FORMAT=${CLANG_FORMAT}
+    -DCMAKE_FORMAT=${CMAKE_FORMAT} -DGIT_COMMAND=${GIT_COMMAND} -P
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/format.cmake
+  VERBATIM
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+add_custom_target(
+  ${LIST_NAME}
+  COMMAND
+    ${CMAKE_COMMAND} -DMODE=LIST -DCLANG_FORMAT=${CLANG_FORMAT}
     -DCMAKE_FORMAT=${CMAKE_FORMAT} -DGIT_COMMAND=${GIT_COMMAND} -P
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/format.cmake
   VERBATIM

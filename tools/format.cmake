@@ -1,5 +1,9 @@
 cmake_policy(SET CMP0007 NEW)
 
+# --------------------------------------------------------------------------------------------------------
+# Utilities
+# --------------------------------------------------------------------------------------------------------
+
 function(check_changes FILE)
   execute_process(COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color
                           ${FILE} RESULT_VARIABLE RESULT)
@@ -9,15 +13,24 @@ function(check_changes FILE)
       PARENT_SCOPE)
 endfunction()
 
-execute_process(
-  COMMAND ${GIT_COMMAND} ls-files --exclude-standard
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-  OUTPUT_VARIABLE TRACKED_FILES)
+function(get_root)
+  get_filename_component(PARENT_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}
+                         DIRECTORY)
+  set(ROOT_DIR
+      ${PARENT_DIR}
+      PARENT_SCOPE)
+endfunction()
 
-string(REPLACE "\n" ";" LIST_FILES "${TRACKED_FILES}")
+# --------------------------------------------------------------------------------------------------------
+# Formatter
+# --------------------------------------------------------------------------------------------------------
+
+file(GLOB_RECURSE LIST_FILES ${CMAKE_SOURCE_DIR}/**)
 
 foreach(file IN LISTS LIST_FILES)
-  if(NOT EXISTS "${file}" OR IS_DIRECTORY "${file}")
+  if(NOT EXISTS "${file}"
+     OR IS_DIRECTORY "${file}"
+     OR file MATCHES "build/")
     list(REMOVE_ITEM LIST_FILES ${file})
   endif()
 endforeach()
@@ -28,12 +41,24 @@ list(FILTER CMAKE_FILES INCLUDE REGEX "(CMakeLists.txt|.*\\.cmake(\\.in)?)$")
 set(SOURCE_FILES "${LIST_FILES}")
 list(FILTER SOURCE_FILES INCLUDE REGEX ".*\\.(cpp|hpp)$")
 
+get_root()
+message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
+
+if(MODE STREQUAL "LIST")
+  string(REPLACE ";" "\n-- " CMAKE_FILES "${CMAKE_FILES}")
+  string(REPLACE ";" "\n-- " SOURCE_FILES "${SOURCE_FILES}")
+
+  message(STATUS "[Format] CMake-Files: \n-- ${CMAKE_FILES}")
+  message(STATUS "[Format] Source-Files: \n-- ${SOURCE_FILES}")
+
+  return()
+endif()
+
 set(ALL_FINE TRUE)
 
 foreach(file IN LISTS CMAKE_FILES)
-  execute_process(
-    COMMAND ${CMAKE_FORMAT} -c=${CMAKE_CURRENT_SOURCE_DIR}/config/.cpm-format
-            -i ${file})
+  execute_process(COMMAND ${CMAKE_FORMAT} -c=${ROOT_DIR}/config/.cpm-format -i
+                          ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
@@ -50,7 +75,8 @@ endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
   execute_process(
-    COMMAND ${CLANG_FORMAT} --style=file:${CMAKE_CURRENT_SOURCE_DIR}/config/.clang-format -i ${file})
+    COMMAND ${CLANG_FORMAT} --style=file:${ROOT_DIR}/config/.clang-format -i
+            ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
