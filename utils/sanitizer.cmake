@@ -1,4 +1,4 @@
-function(viennacore_enable_sanitizer TARGET)
+function(viennacore_enable_sanitizer)
   include(CheckCompilerFlag)
   include(CheckLinkerFlag)
 
@@ -22,13 +22,13 @@ function(viennacore_enable_sanitizer TARGET)
     check_compiler_flag(CXX ${flag} VIENNACORE_COMPILER_FLAG_${INDEX})
 
     if(VIENNACORE_LINKER_FLAG_${INDEX})
-      target_link_options(${TARGET} ${flag})
+      add_link_options(${flag})
     endif()
 
     if(VIENNACORE_COMPILER_FLAG_${INDEX})
-      target_compile_options(${TARGET} ${flag})
+      add_compile_options(${flag})
     endif()
   endforeach()
 
-  message(STATUS "Enabled Sanitizer for ${TARGET}")
+  message(STATUS "Enabled Sanitizer")
 endfunction()
