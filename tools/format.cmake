@@ -53,7 +53,11 @@ viennacore_get_root()
 
 set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cmake-format")
 
-message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
+message(STATUS "[Format] Root: '${ROOT_DIR}'")
+message(STATUS "[Format] Binaries:")
+message(STATUS "[Format] -- Clang-Format: '${CLANG_FORMAT}'")
+message(STATUS "[Format] -- CMake-Format: '${CMAKE_FORMAT}'")
+message(STATUS "[Format] Configs:")
 message(STATUS "[Format] -- CMake-Format Config: '${CMAKE_FORMAT_CONFIG}'")
 message(STATUS "[Format] -- Working Directory: '${WORKING_DIRECTORY}'")
 
