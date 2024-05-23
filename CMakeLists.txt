@@ -51,7 +51,9 @@ CPMAddPackage(
 # Formatting Target
 # --------------------------------------------------------------------------------------------------------
 
-include("cmake/format.cmake")
+include(utils/batch.cmake)
+include(utils/python.cmake)
+include(utils/examples.cmake)
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target
