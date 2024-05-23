@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace core {
+namespace vieTools {
 
 /// std::shared_ptr wrapper for use with ViennaTools libraries.
 /// Smart pointers should be created using the function ::New(...).
@@ -24,4 +24,4 @@ public:
   }
 };
 
-}; // namespace core
+}; // namespace vieTools

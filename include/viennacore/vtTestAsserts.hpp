@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vectorUtil.hpp"
+#include "vtVectorUtil.hpp"
 
 #ifdef _MSC_VER
 #define __PRETTY_FUNCTION__ __FUNCSIG__

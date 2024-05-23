@@ -1,8 +1,10 @@
 #pragma once
 
-#include "timer.hpp"
+#include "vtTimer.hpp"
 
 #include <iostream>
+
+namespace vieTools {
 
 // verbosity levels:
 // 0 errors
@@ -11,7 +13,7 @@
 // 3 + timings
 // 4 + intermediate output (meshes)
 // 5 + debug
-enum class psLogLevel : unsigned {
+enum class LogLevel : unsigned {
   ERROR = 0,
   WARNING = 1,
   INFO = 2,
@@ -21,38 +23,38 @@ enum class psLogLevel : unsigned {
 };
 
 /// Singleton class for thread-safe logging. The logger can be accessed via
-/// psLogger::getInstance(). The logger can be configured to print messages of a
+/// Logger::getInstance(). The logger can be configured to print messages of a
 /// certain level or lower. The default level is INFO. The different logging
 /// levels are: ERROR, WARNING, INFO, TIMING, INTERMEDIATE, DEBUG. The logger
 /// can also be used to print timing information.
-class psLogger {
+class Logger {
   std::string message;
 
   bool error = false;
   const unsigned tabWidth = 4;
-  static psLogLevel logLevel;
+  static LogLevel logLevel;
 
-  psLogger() {}
+  Logger() {}
 
 public:
   // delete constructors to result in better error messages by compilers
-  psLogger(const psLogger &) = delete;
-  void operator=(const psLogger &) = delete;
+  Logger(const Logger &) = delete;
+  void operator=(const Logger &) = delete;
 
   // Set the log level for all instances of the logger.
-  static void setLogLevel(const psLogLevel passedLogLevel) {
+  static void setLogLevel(const LogLevel passedLogLevel) {
     logLevel = passedLogLevel;
   }
 
   static unsigned getLogLevel() { return static_cast<unsigned>(logLevel); }
 
-  static psLogger &getInstance() {
-    static psLogger instance;
+  static Logger &getInstance() {
+    static Logger instance;
     return instance;
   }
 
   // Add debug message if log level is high enough.
-  psLogger &addDebug(std::string s) {
+  Logger &addDebug(std::string s) {
     if (getLogLevel() < 5)
       return *this;
 #pragma omp critical
@@ -61,8 +63,7 @@ public:
   }
 
   // Add timing message if log level is high enough.
-  template <class Clock>
-  psLogger &addTiming(std::string s, core::Timer<Clock> &timer) {
+  template <class Clock> Logger &addTiming(std::string s, Timer<Clock> &timer) {
     if (getLogLevel() < 3)
       return *this;
 #pragma omp critical
@@ -74,7 +75,7 @@ public:
     return *this;
   }
 
-  psLogger &addTiming(std::string s, double timeInSeconds) {
+  Logger &addTiming(std::string s, double timeInSeconds) {
     if (getLogLevel() < 3)
       return *this;
 #pragma omp critical
@@ -85,8 +86,8 @@ public:
     return *this;
   }
 
-  psLogger &addTiming(std::string s, double timeInSeconds,
-                      double totalTimeInSeconds) {
+  Logger &addTiming(std::string s, double timeInSeconds,
+                    double totalTimeInSeconds) {
     if (getLogLevel() < 3)
       return *this;
 #pragma omp critical
@@ -101,7 +102,7 @@ public:
   }
 
   // Add info message if log level is high enough.
-  psLogger &addInfo(std::string s) {
+  Logger &addInfo(std::string s) {
     if (getLogLevel() < 2)
       return *this;
 #pragma omp critical
@@ -110,7 +111,7 @@ public:
   }
 
   // Add warning message if log level is high enough.
-  psLogger &addWarning(std::string s) {
+  Logger &addWarning(std::string s) {
     if (getLogLevel() < 1)
       return *this;
 #pragma omp critical
@@ -119,7 +120,7 @@ public:
   }
 
   // Add error message if log level is high enough.
-  psLogger &addError(std::string s, bool shouldAbort = true) {
+  Logger &addError(std::string s, bool shouldAbort = true) {
 #pragma omp critical
     {
       message += "\n" + std::string(tabWidth, ' ') + "ERROR: " + s + "\n";
@@ -145,4 +146,6 @@ public:
 };
 
 // initialize static member of logger
-inline psLogLevel psLogger::logLevel = psLogLevel::INFO;
+inline LogLevel Logger::logLevel = LogLevel::INFO;
+
+} // namespace vieTools

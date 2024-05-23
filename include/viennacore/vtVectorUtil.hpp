@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 
-namespace core {
+namespace vieTools {
 
 template <typename NumericType> using Pair = std::array<NumericType, 2>;
 
@@ -161,4 +161,4 @@ void PrintBoundingBox(const Pair<Triple<NumericType>> &bdBox) {
   Print(bdBox[1]);
 }
 
-}; // namespace core
+}; // namespace vieTools
