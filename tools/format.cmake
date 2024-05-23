@@ -5,7 +5,7 @@ cmake_policy(SET CMP0009 NEW)
 # Utilities
 # --------------------------------------------------------------------------------------------------------
 
-function(check_changes FILE)
+function(viennacore_check_changes FILE)
   execute_process(COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color ${FILE}
                   RESULT_VARIABLE RESULT)
 
@@ -14,7 +14,7 @@ function(check_changes FILE)
       PARENT_SCOPE)
 endfunction()
 
-function(get_root)
+function(viennacore_get_root)
   get_filename_component(PARENT_DIR ${CMAKE_CURRENT_FUNCTION_LIST_DIR} DIRECTORY)
 
   set(ROOT_DIR
@@ -47,7 +47,7 @@ list(FILTER CMAKE_FILES INCLUDE REGEX "(CMakeLists.txt|.*\\.cmake(\\.in)?)$")
 set(SOURCE_FILES "${LIST_FILES}")
 list(FILTER SOURCE_FILES INCLUDE REGEX ".*\\.(cpp|hpp)$")
 
-get_root()
+viennacore_get_root()
 
 set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cmake-format")
 set(CLANG_FORMAT_CONFIG "file:${ROOT_DIR}/config/.clang-format")
@@ -75,7 +75,7 @@ foreach(file IN LISTS CMAKE_FILES)
     continue()
   endif()
 
-  check_changes(${file})
+  viennacore_check_changes(${file})
 
   if(NOT FILE_CHANGED)
     continue()
@@ -91,7 +91,7 @@ foreach(file IN LISTS SOURCE_FILES)
     continue()
   endif()
 
-  check_changes(${file})
+  viennacore_check_changes(${file})
 
   if(NOT FILE_CHANGED)
     continue()

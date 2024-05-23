@@ -35,7 +35,7 @@ if(NOT CMAKE_FORMAT
   return()
 endif()
 
-function(add_command NAME MODE)
+function(viennacore_add_command NAME MODE)
   add_custom_target(
     ${NAME}
     COMMAND
@@ -46,6 +46,6 @@ function(add_command NAME MODE)
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endfunction()
 
-add_command(${FORMAT_NAME} "FORMAT")
-add_command(${LIST_NAME} "LIST")
-add_command(${CHECK_NAME} "CHECK")
+viennacore_add_command(${FORMAT_NAME} "FORMAT")
+viennacore_add_command(${LIST_NAME} "LIST")
+viennacore_add_command(${CHECK_NAME} "CHECK")
