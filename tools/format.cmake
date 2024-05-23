@@ -1,4 +1,5 @@
 cmake_policy(SET CMP0007 NEW)
+cmake_policy(SET CMP0009 NEW)
 
 # --------------------------------------------------------------------------------------------------------
 # Utilities
@@ -27,10 +28,15 @@ endfunction()
 
 file(GLOB_RECURSE LIST_FILES ${CMAKE_SOURCE_DIR}/**)
 
+list(FILTER LIST_FILES EXCLUDE REGEX "build/")
+
+if(EXCLUDE)
+  message(STATUS "[Format] Excluding: ${EXCLUDE}")
+  list(FILTER LIST_FILES EXCLUDE REGEX "${EXCLUDE}")
+endif()
+
 foreach(file IN LISTS LIST_FILES)
-  if(NOT EXISTS "${file}"
-     OR IS_DIRECTORY "${file}"
-     OR file MATCHES "build/")
+  if(NOT EXISTS "${file}" OR IS_DIRECTORY "${file}")
     list(REMOVE_ITEM LIST_FILES ${file})
   endif()
 endforeach()
@@ -42,7 +48,13 @@ set(SOURCE_FILES "${LIST_FILES}")
 list(FILTER SOURCE_FILES INCLUDE REGEX ".*\\.(cpp|hpp)$")
 
 get_root()
+
+set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cpm-format")
+set(CLANG_FORMAT_CONFIG "file:${ROOT_DIR}/config/.clang-format")
+
 message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
+message(STATUS "[Format] -- CMake-Format Config: '${CMAKE_FORMAT_CONFIG}'")
+message(STATUS "[Format] -- Clang-Format Config: '${CLANG_FORMAT_CONFIG}'")
 
 if(MODE STREQUAL "LIST")
   string(REPLACE ";" "\n-- " CMAKE_FILES "${CMAKE_FILES}")
@@ -57,8 +69,7 @@ endif()
 set(ALL_FINE TRUE)
 
 foreach(file IN LISTS CMAKE_FILES)
-  execute_process(COMMAND ${CMAKE_FORMAT} -c=${ROOT_DIR}/config/.cpm-format -i
-                          ${file})
+  execute_process(COMMAND ${CMAKE_FORMAT} -c=${CMAKE_FORMAT_CONFIG} -i ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
@@ -74,9 +85,8 @@ foreach(file IN LISTS CMAKE_FILES)
 endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
-  execute_process(
-    COMMAND ${CLANG_FORMAT} --style=file:${ROOT_DIR}/config/.clang-format -i
-            ${file})
+  execute_process(COMMAND ${CLANG_FORMAT} --style=${CLANG_FORMAT_CONFIG} -i
+                          ${file})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
