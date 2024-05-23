@@ -1,7 +1,7 @@
 function(viennacore_add_subdirs FOLDER)
   file(GLOB entries "${FOLDER}/*")
 
-  foreach(entry IN LISTS ${entries})
+  foreach(entry IN LISTS entries)
     if(NOT IS_DIRECTORY "${entry}")
       message(STATUS "Skipping non directory '${entry}'")
       continue()
