@@ -8,7 +8,7 @@ cmake_policy(SET CMP0009 NEW)
 function(viennacore_check_changes FILE)
   execute_process(
     COMMAND ${GIT_COMMAND} --no-pager diff --exit-code --color ${FILE}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    WORKING_DIRECTORY ${WORKING_DIRECTORY}
     RESULT_VARIABLE RESULT)
 
   set(FILE_CHANGED
@@ -28,7 +28,7 @@ endfunction()
 # Formatter
 # --------------------------------------------------------------------------------------------------------
 
-file(GLOB_RECURSE LIST_FILES ${CMAKE_SOURCE_DIR}/**)
+file(GLOB_RECURSE LIST_FILES ${WORKING_DIRECTORY}/**)
 
 list(FILTER LIST_FILES EXCLUDE REGEX "build/")
 
@@ -55,6 +55,7 @@ set(CMAKE_FORMAT_CONFIG "${ROOT_DIR}/config/.cmake-format")
 
 message(STATUS "[Format] Core Root: '${ROOT_DIR}'")
 message(STATUS "[Format] -- CMake-Format Config: '${CMAKE_FORMAT_CONFIG}'")
+message(STATUS "[Format] -- Working Directory: '${WORKING_DIRECTORY}'")
 
 if(MODE STREQUAL "LIST")
   string(REPLACE ";" "\n-- " CMAKE_FILES "${CMAKE_FILES}")
@@ -70,7 +71,7 @@ set(ALL_FINE TRUE)
 
 foreach(file IN LISTS CMAKE_FILES)
   execute_process(COMMAND ${CMAKE_FORMAT} -c=${CMAKE_FORMAT_CONFIG} -i ${file}
-                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+                  WORKING_DIRECTORY ${WORKING_DIRECTORY})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
@@ -87,7 +88,7 @@ endforeach()
 
 foreach(file IN LISTS SOURCE_FILES)
   execute_process(COMMAND ${CLANG_FORMAT} --style=file -i ${file}
-                  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+                  WORKING_DIRECTORY ${WORKING_DIRECTORY})
 
   if(NOT MODE STREQUAL "CHECK")
     continue()
