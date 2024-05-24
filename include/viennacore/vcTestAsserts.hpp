@@ -31,7 +31,7 @@
 
 #define VC_TEST_ASSERT_ISNORMAL(first, second, eps)                            \
   {                                                                            \
-    if ((std::fabs(core::DotProduct(first, second)) > eps)) {                  \
+    if ((std::fabs(viennacore::DotProduct(first, second)) > eps)) {            \
       throw std::runtime_error(std::string(__FILE__) + std::string(":") +      \
                                std::to_string(__LINE__) +                      \
                                std::string(" in ") +                           \
@@ -40,8 +40,16 @@
     }                                                                          \
   }
 
+#define VC_RUN_2D_TESTS                                                        \
+  viennacore::RunTest<double, 2>();                                            \
+  viennacore::RunTest<float, 2>();
+
+#define VC_RUN_3D_TESTS                                                        \
+  viennacore::RunTest<double, 3>();                                            \
+  viennacore::RunTest<float, 3>();
+
 #define VC_RUN_ALL_TESTS                                                       \
-  vtRunTest<double, 2>();                                                      \
-  vtRunTest<double, 3>();                                                      \
-  vtRunTest<float, 2>();                                                       \
-  vtRunTest<float, 3>();
+  viennacore::RunTest<double, 2>();                                            \
+  viennacore::RunTest<double, 3>();                                            \
+  viennacore::RunTest<float, 2>();                                             \
+  viennacore::RunTest<float, 3>();
