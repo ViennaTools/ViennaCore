@@ -8,6 +8,8 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
+option(VIENNA_CORE_BUILD_TESTS "Build tests" ON)
+
 set(VIENNA_CORE_FORMAT_EXCLUDE
     ""
     CACHE STRING "Regex to further filter formatted files")
@@ -57,6 +59,18 @@ include(utils/batch.cmake)
 include(utils/python.cmake)
 include(utils/subdirs.cmake)
 include(utils/sanitizer.cmake)
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Tests
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNA_CORE_BUILD_TESTS)
+  message(STATUS "[ViennaCore] Building Tests")
+
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target

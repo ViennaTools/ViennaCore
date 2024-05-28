@@ -3,6 +3,7 @@
 #include "vcTimer.hpp"
 
 #include <iostream>
+#include <string>
 
 namespace viennacore {
 

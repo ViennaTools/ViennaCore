@@ -7,23 +7,57 @@
 
 namespace viennacore {
 
-template <typename NumericType> using Pair = std::array<NumericType, 2>;
+template <typename NumericType> using Vec2D = std::array<NumericType, 2>;
 
-template <typename NumericType> using Triple = std::array<NumericType, 3>;
-
-template <typename NumericType> using Quadruple = std::array<NumericType, 4>;
+template <typename NumericType> using Vec3D = std::array<NumericType, 3>;
 
 /* ------------- Vector operation functions ------------- */
-template <typename NumericType, std::size_t D>
-[[nodiscard]] std::array<NumericType, D>
-Sum(const std::array<NumericType, D> &pVecA,
-    const std::array<NumericType, D> &pVecB) {
-  std::array<NumericType, D> rr;
-  for (size_t i = 0; i < D; ++i) {
-    rr[i] = pVecA[i] + pVecB[i];
+
+#define _define_operator(op)                                                   \
+  /* vec op vec */                                                             \
+  template <typename T>                                                        \
+  inline Vec2D<T> operator op(const Vec2D<T> &a, const Vec2D<T> &b) {          \
+    return Vec2D<T>{a[0] op b[0], a[1] op b[1]};                               \
+  }                                                                            \
+                                                                               \
+  template <typename T>                                                        \
+  inline Vec3D<T> operator op(const Vec3D<T> &a, const Vec3D<T> &b) {          \
+    return Vec3D<T>{a[0] op b[0], a[1] op b[1], a[2] op b[2]};                 \
+  }                                                                            \
+                                                                               \
+  template <typename T, typename OT>                                           \
+  inline Vec3D<T> operator op(const Vec3D<T> &a, const std::array<OT, 3> &b) { \
+    return Vec3D<T>{a[0] op b[0], a[1] op b[1], a[2] op b[2]};                 \
+  }                                                                            \
+                                                                               \
+  /* vec op scalar */                                                          \
+  template <typename T>                                                        \
+  inline Vec2D<T> operator op(const Vec2D<T> &a, const T & b) {                \
+    return Vec2D<T>{a[0] op b, a[1] op b};                                     \
+  }                                                                            \
+                                                                               \
+  template <typename T>                                                        \
+  inline Vec3D<T> operator op(const Vec3D<T> &a, const T & b) {                \
+    return Vec3D<T>{a[0] op b, a[1] op b, a[2] op b};                          \
+  }                                                                            \
+                                                                               \
+  /* scalar op vec */                                                          \
+  template <typename T>                                                        \
+  inline Vec2D<T> operator op(const T & a, const Vec2D<T> &b) {                \
+    return Vec2D<T>{a op b[0], a op b[1]};                                     \
+  }                                                                            \
+                                                                               \
+  template <typename T>                                                        \
+  inline Vec3D<T> operator op(const T & a, const Vec3D<T> &b) {                \
+    return Vec3D<T>{a op b[0], a op b[1], a op b[2]};                          \
   }
-  return rr;
-}
+
+_define_operator(*);
+_define_operator(/);
+_define_operator(+);
+_define_operator(-);
+
+#undef _define_operator
 
 template <typename NumericType, std::size_t D>
 [[nodiscard]] std::array<NumericType, D>
@@ -33,17 +67,6 @@ Sum(const std::array<NumericType, D> &pVecA,
   std::array<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = pVecA[i] + pVecB[i] + pVecC[i];
-  }
-  return rr;
-}
-
-template <typename NumericType, std::size_t D>
-[[nodiscard]] std::array<NumericType, D>
-Diff(const std::array<NumericType, D> &pVecA,
-     const std::array<NumericType, D> &pVecB) {
-  std::array<NumericType, D> rr;
-  for (size_t i = 0; i < D; ++i) {
-    rr[i] = pVecA[i] - pVecB[i];
   }
   return rr;
 }
@@ -59,10 +82,9 @@ template <typename NumericType, std::size_t D>
 }
 
 template <typename NumericType>
-[[nodiscard]] Triple<NumericType>
-CrossProduct(const Triple<NumericType> &pVecA,
-             const Triple<NumericType> &pVecB) {
-  Triple<NumericType> rr;
+[[nodiscard]] Vec3D<NumericType> CrossProduct(const Vec3D<NumericType> &pVecA,
+                                              const Vec3D<NumericType> &pVecB) {
+  Vec3D<NumericType> rr;
   rr[0] = pVecA[1] * pVecB[2] - pVecA[2] * pVecB[1];
   rr[1] = pVecA[2] * pVecB[0] - pVecA[0] * pVecB[2];
   rr[2] = pVecA[0] * pVecB[1] - pVecA[1] * pVecB[0];
@@ -117,23 +139,6 @@ Inv(const std::array<NumericType, D> &vec) {
 }
 
 template <typename NumericType, std::size_t D>
-void Scale(const NumericType pF, std::array<NumericType, D> &pT) {
-  for (size_t i = 0; i < D; ++i) {
-    pT[i] *= pF;
-  }
-}
-
-template <typename NumericType, std::size_t D>
-[[nodiscard]] std::array<NumericType, D>
-Scale(const NumericType pF, const std::array<NumericType, D> &pT) {
-  std::array<NumericType, D> rr;
-  for (size_t i = 0; i < D; ++i) {
-    rr[i] = pF * pT[i];
-  }
-  return rr;
-}
-
-template <typename NumericType, std::size_t D>
 std::array<NumericType, D> ScaleAdd(const std::array<NumericType, D> &mult,
                                     const std::array<NumericType, D> &add,
                                     const NumericType fac) {
@@ -147,13 +152,12 @@ std::array<NumericType, D> ScaleAdd(const std::array<NumericType, D> &mult,
 template <typename NumericType, size_t D>
 [[nodiscard]] NumericType Distance(const std::array<NumericType, D> &pVecA,
                                    const std::array<NumericType, D> &pVecB) {
-  auto diff = Diff(pVecA, pVecB);
-  return Norm(diff);
+  return Norm(pVecA - pVecB);
 }
 
 template <typename NumericType>
-[[nodiscard]] Triple<NumericType>
-ComputeNormal(const Triple<Triple<NumericType>> &planeCoords) {
+[[nodiscard]] Vec3D<NumericType>
+ComputeNormal(const Vec3D<Vec3D<NumericType>> &planeCoords) {
   auto uu = Diff(planeCoords[1], planeCoords[0]);
   auto vv = Diff(planeCoords[2], planeCoords[0]);
   return CrossProduct(uu, vv);
@@ -167,23 +171,23 @@ bool IsNormalized(const std::array<NumericType, D> &vec) {
 }
 
 /* ------------- Debug convenience functions ------------- */
-template <typename NumericType, std::size_t D>
-void Print(const std::array<NumericType, D> &vec, bool endl = true) {
-  std::cout << "(";
+
+template <typename T, std::size_t D>
+inline std::ostream &operator<<(std::ostream &o, const std::array<T, D> &v) {
+  o << "(";
   for (size_t i = 0; i < D; ++i) {
-    std::cout << vec[i];
+    o << v[i];
     if (i < D - 1)
-      std::cout << ", ";
+      o << ", ";
   }
-  std::cout << ")" << (endl ? "\n" : "");
+  o << ")";
+  return o;
 }
 
 template <typename NumericType>
-void PrintBoundingBox(const Pair<Triple<NumericType>> &bdBox) {
-  std::cout << "Bounding box min coords: ";
-  Print(bdBox[0]);
-  std::cout << "Bounding box max coords: ";
-  Print(bdBox[1]);
+void PrintBoundingBox(const std::array<Vec3D<NumericType>, 2> &bdBox) {
+  std::cout << "Bounding box min coords: " << bdBox[0] << std::endl
+            << "Bounding box max coords: " << bdBox[1] << std::endl;
 }
 
 }; // namespace viennacore
