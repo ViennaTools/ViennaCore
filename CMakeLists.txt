@@ -8,9 +8,9 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNA_CORE_BUILD_TESTS "Build tests" OFF)
+option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
-set(VIENNA_CORE_FORMAT_EXCLUDE
+set(VIENNACORE_FORMAT_EXCLUDE
     ""
     CACHE STRING "Regex to further filter formatted files")
 
@@ -64,7 +64,7 @@ include(utils/sanitizer.cmake)
 # Setup Tests
 # --------------------------------------------------------------------------------------------------------
 
-if(VIENNA_CORE_BUILD_TESTS)
+if(VIENNACORE_BUILD_TESTS)
   message(STATUS "[ViennaCore] Building Tests")
 
   enable_testing()
