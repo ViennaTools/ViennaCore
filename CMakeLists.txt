@@ -8,7 +8,7 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNA_CORE_BUILD_TESTS "Build tests" ON)
+option(VIENNA_CORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNA_CORE_FORMAT_EXCLUDE
     ""

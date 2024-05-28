@@ -158,8 +158,8 @@ template <typename NumericType, size_t D>
 template <typename NumericType>
 [[nodiscard]] Vec3D<NumericType>
 ComputeNormal(const Vec3D<Vec3D<NumericType>> &planeCoords) {
-  auto uu = Diff(planeCoords[1], planeCoords[0]);
-  auto vv = Diff(planeCoords[2], planeCoords[0]);
+  auto uu = planeCoords[1] - planeCoords[0];
+  auto vv = planeCoords[2] - planeCoords[0];
   return CrossProduct(uu, vv);
 }
 
