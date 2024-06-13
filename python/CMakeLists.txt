@@ -32,8 +32,10 @@ endif()
 # Setup Bindings
 # --------------------------------------------------------------------------------------------------------
 
-viennacore_setup_binding(viennacore ${VIENNACORE_LIBRARY_OUTPUT_DIR})
+viennacore_setup_binding(${VIENNACORE_PYTHON_MODULE_NAME} ${VIENNACORE_LIBRARY_OUTPUT_DIR})
 
-target_link_libraries(viennacore PRIVATE ViennaCore)
+target_link_libraries(${VIENNACORE_PYTHON_MODULE_NAME} PRIVATE ViennaCore)
 
-target_compile_definitions(viennacore PRIVATE -DVIENNACORE_MODULE_NAME=viennacore)
+target_compile_definitions(
+  ${VIENNACORE_PYTHON_MODULE_NAME} PRIVATE VIENNACORE_MODULE_NAME=${VIENNACORE_PYTHON_MODULE_NAME}
+                                           VIENNACORE_VERSION=${CMAKE_PROJECT_VERSION})

@@ -202,21 +202,21 @@ public:
 #pragma omp task final(dontSpawnMoreThreads)
         {
           // Left Subtree
-          build(myRootNode,      // Use rootNode as parent
-                myNodes.begin(), // Data start
-                std::next(myNodes.begin(), medianIndex), // Data end
-                1,                                       // Depth
-                true,                                    // Left
-                surplusWorkers, maxParallelDepth);
+          build_(myRootNode,      // Use rootNode as parent
+                 myNodes.begin(), // Data start
+                 std::next(myNodes.begin(), medianIndex), // Data end
+                 1,                                       // Depth
+                 true,                                    // Left
+                 surplusWorkers, maxParallelDepth);
         }
 
         // Right Subtree
-        build(myRootNode, // Use rootNode as parent
-              std::next(myNodes.begin(), medianIndex + 1), // Data start
-              myNodes.end(),                               // Data end
-              1,                                           // Depth
-              false,                                       // Right
-              surplusWorkers, maxParallelDepth);
+        build_(myRootNode, // Use rootNode as parent
+               std::next(myNodes.begin(), medianIndex + 1), // Data start
+               myNodes.end(),                               // Data end
+               1,                                           // Depth
+               false,                                       // Right
+               surplusWorkers, maxParallelDepth);
 #pragma omp taskwait
       }
     }
@@ -225,9 +225,9 @@ public:
   }
 
 private:
-  void build(Node *parent, typename std::vector<Node>::iterator start,
-             typename std::vector<Node>::iterator end, SizeType depth,
-             bool isLeft, int surplusWorkers, int maxParallelDepth) const {
+  void build_(Node *parent, typename std::vector<Node>::iterator start,
+              typename std::vector<Node>::iterator end, SizeType depth,
+              bool isLeft, int surplusWorkers, int maxParallelDepth) const {
     auto size = std::distance(start, end);
     auto axis = depth % D;
 
@@ -254,21 +254,21 @@ private:
 #pragma omp task final(dontSpawnMoreThreads)
       {
         // Left Subtree
-        build(current,                       // Use current node as parent
-              start,                         // Data start
-              std::next(start, medianIndex), // Data end
-              depth + 1,                     // Depth
-              true,                          // Left
-              surplusWorkers, maxParallelDepth);
+        build_(current,                       // Use current node as parent
+               start,                         // Data start
+               std::next(start, medianIndex), // Data end
+               depth + 1,                     // Depth
+               true,                          // Left
+               surplusWorkers, maxParallelDepth);
       }
 
       //  Right Subtree
-      build(current,                           // Use current node as parent
-            std::next(start, medianIndex + 1), // Data start
-            end,                               // Data end
-            depth + 1,                         // Depth
-            false,                             // Right
-            surplusWorkers, maxParallelDepth);
+      build_(current,                           // Use current node as parent
+             std::next(start, medianIndex + 1), // Data start
+             end,                               // Data end
+             depth + 1,                         // Depth
+             false,                             // Right
+             surplusWorkers, maxParallelDepth);
 #pragma omp taskwait
     } else if (size == 1) {
       Node *current = toRawPointer(start);

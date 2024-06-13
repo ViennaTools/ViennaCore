@@ -32,23 +32,23 @@ template <typename NumericType> using Vec3D = std::array<NumericType, 3>;
                                                                                \
   /* vec op scalar */                                                          \
   template <typename T>                                                        \
-  inline Vec2D<T> operator op(const Vec2D<T> &a, const T & b) {                \
+  inline Vec2D<T> operator op(const Vec2D<T> &a, const T &b) {                 \
     return Vec2D<T>{a[0] op b, a[1] op b};                                     \
   }                                                                            \
                                                                                \
   template <typename T>                                                        \
-  inline Vec3D<T> operator op(const Vec3D<T> &a, const T & b) {                \
+  inline Vec3D<T> operator op(const Vec3D<T> &a, const T &b) {                 \
     return Vec3D<T>{a[0] op b, a[1] op b, a[2] op b};                          \
   }                                                                            \
                                                                                \
   /* scalar op vec */                                                          \
   template <typename T>                                                        \
-  inline Vec2D<T> operator op(const T & a, const Vec2D<T> &b) {                \
+  inline Vec2D<T> operator op(const T &a, const Vec2D<T> &b) {                 \
     return Vec2D<T>{a op b[0], a op b[1]};                                     \
   }                                                                            \
                                                                                \
   template <typename T>                                                        \
-  inline Vec3D<T> operator op(const T & a, const Vec3D<T> &b) {                \
+  inline Vec3D<T> operator op(const T &a, const Vec3D<T> &b) {                 \
     return Vec3D<T>{a op b[0], a op b[1], a op b[2]};                          \
   }
 

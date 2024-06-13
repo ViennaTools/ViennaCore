@@ -51,6 +51,9 @@ CPMAddPackage(
   VERSION 1.11.2
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
+find_package(OpenMP REQUIRED)
+target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
+
 # --------------------------------------------------------------------------------------------------------
 # CMake Utilities
 # --------------------------------------------------------------------------------------------------------
@@ -82,8 +85,6 @@ if(VIENNACORE_BUILD_PYTHON)
   add_subdirectory(python)
   return()
 endif()
-
-
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target

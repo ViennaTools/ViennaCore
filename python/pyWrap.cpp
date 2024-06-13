@@ -11,7 +11,7 @@
 #define TOKENPASTE(x, y, z) TOKENPASTE_INTERNAL(x, y, z)
 #define STRINGIZE2(s) #s
 #define STRINGIZE(s) STRINGIZE2(s)
-#define VIENNACS_MODULE_VERSION STRINGIZE(VIENNACS_VERSION)
+#define VIENNACORE_MODULE_VERSION STRINGIZE(VIENNACORE_VERSION)
 
 #include <optional>
 #include <vector>
@@ -23,6 +23,7 @@
 #include <pybind11/stl_bind.h>
 
 // all header files which define API functions
+#include <vcKDTree.hpp>
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
 #include <vcTimer.hpp>
@@ -31,14 +32,16 @@
 
 using namespace viennacore;
 
+typedef double T;
+
 PYBIND11_DECLARE_HOLDER_TYPE(Types, SmartPointer<Types>)
 
-PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
+PYBIND11_MODULE(VIENNACORE_MODULE_NAME, module) {
   module.doc() = "ViennaCore implements common functionality found in all "
                  "ViennaTools libraries.";
 
   // set version string of python module
-  module.attr("__version__") = VIENNACS_MODULE_VERSION;
+  module.attr("__version__") = VIENNACORE_MODULE_VERSION;
 
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
@@ -83,4 +86,17 @@ PYBIND11_MODULE(VIENNACS_MODULE_NAME, module) {
       .def_readonly("totalDuration",
                     &Timer<std::chrono::high_resolution_clock>::totalDuration,
                     "Get the total duration of the timer in nanoseconds.");
+
+  pybind11::class_<KDTree<T, std::array<T, 3>>,
+                   SmartPointer<KDTree<T, std::array<T, 3>>>>(module, "KDTree")
+      .def(pybind11::init(&SmartPointer<KDTree<T, std::array<T, 3>>>::New<>))
+      .def(pybind11::init(&SmartPointer<KDTree<T, std::array<T, 3>>>::New<
+                          const std::vector<std::array<T, 3>>>),
+           pybind11::arg("points"))
+      .def("setPoints", &KDTree<T, std::array<T, 3>>::setPoints)
+      .def("build", &KDTree<T, std::array<T, 3>>::build)
+      .def("findNearest", &KDTree<T, std::array<T, 3>>::findNearest)
+      .def("findKNearest", &KDTree<T, std::array<T, 3>>::findKNearest)
+      .def("findNearestWithinRadius",
+           &KDTree<T, std::array<T, 3>>::findNearestWithinRadius);
 }
