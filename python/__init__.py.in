@@ -1,0 +1,9 @@
+"""
+ViennaCore
+========
+
+ViennaCore implements common functionality found in all ViennaTools libraries.
+"""
+
+
+from .@NAME@ import *

@@ -8,6 +8,8 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
+option(VIENNACORE_BUILD_PYTHON "Build python bindings" OFF)
+
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -70,6 +72,18 @@ if(VIENNACORE_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Python Bindings
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNACORE_BUILD_PYTHON)
+  message(STATUS "[ViennaCore] Building Python Bindings")
+  add_subdirectory(python)
+  return()
+endif()
+
+
 
 # --------------------------------------------------------------------------------------------------------
 # Install Target
