@@ -46,7 +46,7 @@ PYBIND11_MODULE(VIENNACORE_MODULE_NAME, module) {
   // wrap omp_set_num_threads to control number of threads
   module.def("setNumThreads", &omp_set_num_threads);
 
-  pybind11::enum_<LogLevel>(module, "LogLevel")
+  pybind11::enum_<LogLevel>(module, "LogLevel", pybind11::module_local())
       .value("ERROR", LogLevel::ERROR)
       .value("WARNING", LogLevel::WARNING)
       .value("INFO", LogLevel::INFO)
@@ -55,7 +55,8 @@ PYBIND11_MODULE(VIENNACORE_MODULE_NAME, module) {
       .value("DEBUG", LogLevel::DEBUG)
       .export_values();
 
-  pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger")
+  pybind11::class_<Logger, SmartPointer<Logger>>(module, "Logger",
+                                                 pybind11::module_local())
       .def_static("setLogLevel", &Logger::setLogLevel)
       .def_static("getLogLevel", &Logger::getLogLevel)
       .def_static("getInstance", &Logger::getInstance,

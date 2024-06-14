@@ -3,11 +3,11 @@ requires = ["scikit-build-core", "pybind11"]
 build-backend = "scikit_build_core.build"
 
 [project]
-version = "0.0.1"
+version = "1.0.0"
 name = "ViennaCore_Python"
 readme = "README.md"
 license = {file = "LICENSE"}
-description = "Common functionality found in all ViennaTools libraries"
+description = "Common functionality found in most ViennaTools libraries"
 
 [project.urls]
 Repository = "https://github.com/ViennaTools/ViennaCore"
