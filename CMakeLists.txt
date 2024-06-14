@@ -2,13 +2,11 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 0.0.1)
+  VERSION 1.0.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
 # --------------------------------------------------------------------------------------------------------
-
-option(VIENNACORE_BUILD_PYTHON "Build python bindings" OFF)
 
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
@@ -74,16 +72,6 @@ if(VIENNACORE_BUILD_TESTS)
 
   enable_testing()
   add_subdirectory(tests)
-endif()
-
-# --------------------------------------------------------------------------------------------------------
-# Setup Python Bindings
-# --------------------------------------------------------------------------------------------------------
-
-if(VIENNACORE_BUILD_PYTHON)
-  message(STATUS "[ViennaCore] Building Python Bindings")
-  add_subdirectory(python)
-  return()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
