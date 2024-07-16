@@ -1,4 +1,4 @@
-function(viennacore_setup_copy SOURCE_TARGET DEST_TARGET OUTPUT)
+function(viennacore_setup SOURCE_TARGET DEST_TARGET OUTPUT)
   if(NOT TARGET ${SOURCE_TARGET})
     message(WARNING "Could not find target ${SOURCE_TARGET}")
     return()
@@ -17,15 +17,15 @@ function(viennacore_setup_vtk_env TARGET OUTPUT)
   # built. This is currently the case, and has been the case for prior vtk versions - However we
   # should keep an eye on this.
 
-  viennacore_setup_copy(vtksys ${TARGET} ${OUTPUT})
+  viennacore_setup(vtksys ${TARGET} ${OUTPUT})
 endfunction()
 
 function(viennacore_setup_tbb_env TARGET OUTPUT)
   message(STATUS "Setting up TBB-Environment for ${TARGET}")
-  viennacore_setup_copy(tbb ${TARGET} ${OUTPUT})
+  viennacore_setup(tbb ${TARGET} ${OUTPUT})
 endfunction()
 
 function(viennacore_setup_embree_env TARGET OUTPUT)
   message(STATUS "Setting up Embree-Environment for ${TARGET}")
-  viennacore_setup_copy(embree ${TARGET} ${OUTPUT})
+  viennacore_setup(embree ${TARGET} ${OUTPUT})
 endfunction()
