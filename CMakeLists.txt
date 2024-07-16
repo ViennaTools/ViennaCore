@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.0.0)
+  VERSION 1.1.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -56,11 +56,13 @@ target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
 # CMake Utilities
 # --------------------------------------------------------------------------------------------------------
 
-include(utils/format.cmake)
+include(utils/setup.cmake)
+include(utils/python.cmake)
 
 include(utils/batch.cmake)
-include(utils/python.cmake)
 include(utils/subdirs.cmake)
+
+include(utils/format.cmake)
 include(utils/sanitizer.cmake)
 
 # --------------------------------------------------------------------------------------------------------
