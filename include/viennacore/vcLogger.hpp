@@ -162,7 +162,7 @@ public:
                          bool shouldAbort = true) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + UT_TERMINAL_RED +
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA module " + moduleName + ": " +
                  getErrorString(err) + "\n";
       // always abort once error message should be printed
@@ -178,7 +178,7 @@ public:
                            bool shouldAbort = true) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + UT_TERMINAL_RED +
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA kernel " + kernelName + ": " +
                  getErrorString(err) + "\n";
       // always abort once error message should be printed
@@ -194,7 +194,7 @@ public:
                          bool shouldAbort = true) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + UT_TERMINAL_RED +
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA kernel launch (" + kernelName +
                  "): " + getErrorString(err) + "\n";
       // always abort once error message should be printed
