@@ -114,6 +114,8 @@ public:
     }
   }
 
+  SizeType getNumberOfPoints() const { return nodes.size(); }
+
   [[nodiscard]] std::optional<std::pair<SizeType, NumericType>>
   findNearest(const ValueType &x) const {
     if (!rootNode)
