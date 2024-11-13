@@ -5,9 +5,16 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <stdio.h>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+
+#ifdef __WIN32__
+#define vc_snprintf sprintf_s
+#else
+#define vc_snprintf snprintf
+#endif
 
 namespace viennacore {
 
@@ -213,6 +220,39 @@ inline void ProgressBar(size_t i, size_t finalCount = 100) {
   }
   std::cout << "] " << static_cast<int>(progress * 100.0) << " %\r";
   std::cout.flush();
+}
+
+// Print function for large numbers, printing 10000000 as "10M" instead
+inline std::string prettyDouble(const double val) {
+  const double absVal = abs(val);
+  char result[1000];
+
+  if (absVal >= 1e+18f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e18f, 'E');
+  else if (absVal >= 1e+15f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e15f, 'P');
+  else if (absVal >= 1e+12f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e12f, 'T');
+  else if (absVal >= 1e+09f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e09f, 'G');
+  else if (absVal >= 1e+06f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e06f, 'M');
+  else if (absVal >= 1e+03f)
+    vc_snprintf(result, 1000, "%.1f%c", val / 1e03f, 'k');
+  else if (absVal <= 1e-12f)
+    vc_snprintf(result, 1000, "%.1f%c", val * 1e15f, 'f');
+  else if (absVal <= 1e-09f)
+    vc_snprintf(result, 1000, "%.1f%c", val * 1e12f, 'p');
+  else if (absVal <= 1e-06f)
+    vc_snprintf(result, 1000, "%.1f%c", val * 1e09f, 'n');
+  else if (absVal <= 1e-03f)
+    vc_snprintf(result, 1000, "%.1f%c", val * 1e06f, 'u');
+  else if (absVal <= 1e-00f)
+    vc_snprintf(result, 1000, "%.1f%c", val * 1e03f, 'm');
+  else
+    vc_snprintf(result, 1000, "%f", (float)val);
+
+  return result;
 }
 
 } // namespace util
