@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include <utChecks.hpp>
+#include "vcChecks.hpp"
 
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
@@ -23,10 +23,7 @@
 
 #define VIENNAPS_KERNELS_PATH STRINGIFY(VIENNAPS_KERNELS_PATH_DEFINE)
 
-// global definitions
-constexpr int DIM = 3;
-
-namespace viennaps {
+namespace viennacore {
 
 namespace gpu {
 
@@ -146,4 +143,4 @@ void CreateContext(Context &context,
 void ReleaseContext(Context context) { delete context; }
 
 } // namespace gpu
-} // namespace viennaps
+} // namespace viennacore
