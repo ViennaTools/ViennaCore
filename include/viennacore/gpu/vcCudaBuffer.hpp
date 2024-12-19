@@ -9,8 +9,6 @@
 
 namespace viennacore {
 
-namespace gpu {
-
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
   inline CUdeviceptr dPointer() const { return (CUdeviceptr)d_ptr; }
@@ -79,5 +77,4 @@ struct CudaBuffer {
   void *d_ptr{nullptr};
 };
 
-} // namespace gpu
 } // namespace viennacore

@@ -25,8 +25,6 @@
 
 namespace viennacore {
 
-namespace gpu {
-
 static void contextLogCallback(unsigned int level, const char *tag,
                                const char *message, void *) {
 #ifndef NDEBUG
@@ -142,5 +140,4 @@ void CreateContext(Context &context,
 
 void ReleaseContext(Context context) { delete context; }
 
-} // namespace gpu
 } // namespace viennacore
