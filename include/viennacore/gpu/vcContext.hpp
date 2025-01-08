@@ -35,7 +35,7 @@ static void contextLogCallback(unsigned int level, const char *tag,
 struct Context_t {
   CUmodule getModule(const std::string &moduleName);
 
-  const std::string modulePath;
+  std::string modulePath;
   std::vector<std::string> moduleNames;
   std::vector<CUmodule> modules;
 
@@ -89,7 +89,9 @@ void CreateContext(Context &context,
                    const int deviceID = 0) {
 
   // create new context
-  context = new Context_t{.modulePath = modulePath, .deviceID = deviceID};
+  context = new Context_t;
+  context->modulePath = modulePath;
+  context->deviceID = deviceID;
 
   // initialize CUDA runtime API (cuda## prefix, cuda_runtime_api.h)
   CUDA_CHECK(Free(0));
