@@ -67,17 +67,36 @@ public:
     setPDF(pdfValues, xValues);
   }
 
+  void setPDF(const std::vector<std::vector<NumericType>> &pdfValues,
+              const std::vector<NumericType> &xValues,
+              const std::vector<NumericType> &yValues) {
+
+    NumericType maxValue = 0;
+    auto support = getSupport(pdfValues, {xValues, yValues}, maxValue);
+
+    Logger::getInstance()
+        .addDebug("Bivariate PDF support: " + std::to_string(support[0][0]) +
+                  " " + std::to_string(support[0][1]) + "; " +
+                  std::to_string(support[1][0]) + " " +
+                  std::to_string(support[1][1]))
+        .print();
+
+    if (algo_)
+      algo_.reset();
+    algo_ = std::make_unique<AcceptRejectSampling<NumericType>>(
+        pdfValues, support, maxValue);
+  }
+
   void setPDF(const std::function<NumericType(NumericType, NumericType)> &pdf,
               const std::array<Vec2D<NumericType>, 2> &bounds,
               const std::array<unsigned, D> &nBins) {
-    if (algo_)
-      algo_.reset();
 
     std::vector<std::vector<NumericType>> pdfValues(nBins[0]);
+    std::vector<NumericType> xValues(nBins[0]);
+    std::vector<NumericType> yValues(nBins[1]);
 
-    NumericType xStep = (bounds[0][1] - bounds[0][0]) / nBins[0];
-    NumericType yStep = (bounds[1][1] - bounds[1][0]) / nBins[1];
-    NumericType maxValue = 0;
+    NumericType xStep = (bounds[0][1] - bounds[0][0]) / (nBins[0] - 1);
+    NumericType yStep = (bounds[1][1] - bounds[1][0]) / (nBins[1] - 1);
 
     NumericType x = bounds[0][0];
     for (unsigned i = 0; i < nBins[0]; ++i) {
@@ -86,15 +105,14 @@ public:
       NumericType y = bounds[1][0];
       for (unsigned j = 0; j < nBins[1]; j++) {
         pdfValues[i][j] = pdf(x, y);
-        if (pdfValues[i][j] > maxValue)
-          maxValue = pdfValues[i][j];
         y += yStep;
+        yValues[j] = y;
       }
       x += xStep;
+      xValues[i] = x;
     }
 
-    algo_ = std::make_unique<AcceptRejectSampling<NumericType>>(
-        pdfValues, bounds, maxValue);
+    setPDF(pdfValues, xValues, yValues);
   }
 
   auto sample(RNG &rngState) {
@@ -131,6 +149,58 @@ private:
     }
 
     return support;
+  }
+
+  std::array<Vec2D<NumericType>, 2>
+  getSupport(const std::vector<std::vector<NumericType>> &pdfValues,
+             const std::array<std::vector<NumericType>, 2> &grid,
+             NumericType &maxValue) {
+    Vec2D<NumericType> support_x = {grid[0].back(), grid[0].front()};
+    Vec2D<NumericType> support_y = {grid[1].back(), grid[1].front()};
+
+    unsigned nBins_x = grid[0].size();
+    unsigned nBins_y = grid[1].size();
+
+    bool first_y = false;
+    for (int j = 0; j < nBins_y; ++j) {
+      auto y = grid[1][j];
+
+      bool first_x = false;
+      for (int i = 0; i < nBins_x; ++i) {
+        auto x = grid[0][i];
+        auto pdf_eval = pdfValues[i][j];
+        if (pdf_eval > maxValue)
+          maxValue = pdf_eval;
+
+        if (pdf_eval > 1e-6) {
+          if (!first_x) {
+            if (x < support_x[0]) {
+              support_x[0] = x;
+            }
+            first_x = true;
+          } else {
+            if (x > support_x[1]) {
+              support_x[1] = x;
+            }
+          }
+        }
+      }
+
+      if (first_x) {
+        if (!first_y) {
+          if (y < support_y[0]) {
+            support_y[0] = y;
+          }
+          first_y = true;
+        } else {
+          if (y > support_y[1]) {
+            support_y[1] = y;
+          }
+        }
+      }
+    }
+
+    return {support_x, support_y};
   }
 };
 

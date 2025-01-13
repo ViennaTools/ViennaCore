@@ -11,7 +11,7 @@ namespace viennacore {
 
 template <class NumericType,
           class SamplingMethod =
-              std::piecewise_constant_distribution<NumericType>>
+              std::piecewise_linear_distribution<NumericType>>
 class InverseTransformSampling : public BaseSamplingMethod<NumericType, 1> {
   SamplingMethod dist_;
 
