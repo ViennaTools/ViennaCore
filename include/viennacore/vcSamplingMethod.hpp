@@ -8,7 +8,7 @@ template <class NumericType, int D> class BaseSamplingMethod {
 public:
   virtual ~BaseSamplingMethod() = default;
 
-  virtual std::array<NumericType, D> sample(RNG &rngState) const = 0;
+  virtual std::array<NumericType, D> sample(RNG &rngState) = 0;
 };
 
 } // namespace viennacore

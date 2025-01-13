@@ -4,6 +4,7 @@
 #include "vcInverseTransformSampling.hpp"
 #include "vcLogger.hpp"
 
+#include <functional>
 #include <memory>
 
 namespace viennacore {
@@ -36,54 +37,34 @@ public:
     return *this;
   }
 
-  void setPDF(const std::function<NumericType(NumericType)> &pdf,
-              const Vec2D<NumericType> &bounds, const unsigned nBins) {
-    if (algo_)
-      algo_.reset();
+  void setPDF(const std::vector<NumericType> &pdfValues,
+              const std::vector<NumericType> &xValues) {
 
-    std::vector<NumericType> cdfValues(nBins);
-    Vec2D<NumericType> minBounds = bounds;
-    bool foundMin = false;
-
-    NumericType step = (bounds[1] - bounds[0]) / nBins;
-
-    NumericType x = bounds[0];
-    cdfValues[0] = pdf(x);
-    for (unsigned i = 1; i < nBins; ++i) {
-      auto pdfVal = pdf(x);
-
-      if (!foundMin && pdfVal < 1e-6) {
-        minBounds[0] = x;
-      } else {
-        foundMin = true;
-      }
-
-      x += step;
-      cdfValues[i] = cdfValues[i - 1] + pdfVal;
-    }
-
-    if (!foundMin) {
-      Logger::getInstance().addError("PDF is zero everywhere.");
-    }
-
-    // look for upper bound
-    x = bounds[1];
-    for (unsigned i = nBins - 1; i > 0; --i) {
-      if (pdf(x) < 1e-6) {
-        minBounds[1] = x;
-        x -= step;
-      } else {
-        break;
-      }
-    }
+    Vec2D<NumericType> minBounds = getSupport(pdfValues, xValues);
 
     Logger::getInstance()
-        .addDebug("Min bounds: " + std::to_string(minBounds[0]) + " " +
-                  std::to_string(minBounds[1]))
+        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
+                  " " + std::to_string(minBounds[1]))
         .print();
 
-    algo_ = std::make_unique<InverseTransformSampling<NumericType>>(cdfValues,
-                                                                    minBounds);
+    if (algo_)
+      algo_.reset();
+    algo_ = std::make_unique<InverseTransformSampling<NumericType>>(xValues,
+                                                                    pdfValues);
+  }
+
+  void setPDF(const std::function<NumericType(NumericType)> &pdf,
+              const Vec2D<NumericType> &bounds, const unsigned nBins) {
+
+    std::vector<NumericType> pdfValues(nBins);
+    std::vector<NumericType> xValues(nBins);
+    const NumericType step = (bounds[1] - bounds[0]) / (nBins - 1);
+    for (unsigned i = 0; i < nBins; ++i) {
+      xValues[i] = bounds[0] + i * step;
+      pdfValues[i] = pdf(xValues[i]);
+    }
+
+    setPDF(pdfValues, xValues);
   }
 
   void setPDF(const std::function<NumericType(NumericType, NumericType)> &pdf,
@@ -116,9 +97,40 @@ public:
         pdfValues, bounds, maxValue);
   }
 
-  auto sample(RNG &rngState) const {
+  auto sample(RNG &rngState) {
     assert(algo_);
     return algo_->sample(rngState);
+  }
+
+private:
+  Vec2D<NumericType> getSupport(const std::vector<NumericType> &pdfValues,
+                                const std::vector<NumericType> &xValues) {
+    assert(pdfValues.size() == xValues.size());
+    Vec2D<NumericType> support = {xValues.front(), xValues.back()};
+    unsigned nBins = pdfValues.size();
+
+    // look for lower bound
+    bool foundMin = false;
+    for (unsigned i = 0; i < nBins; ++i) {
+      if (pdfValues[i] > 1e-6) {
+        foundMin = true;
+        break;
+      }
+      support[0] = xValues[i];
+    }
+
+    if (!foundMin) {
+      Logger::getInstance().addError("Univariate PDF is zero everywhere.");
+    }
+
+    // look for upper bound
+    for (unsigned i = nBins - 1; i > 0; --i) {
+      if (pdfValues[i] > 1e-6)
+        break;
+      support[1] = xValues[i];
+    }
+
+    return support;
   }
 };
 

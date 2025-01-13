@@ -25,26 +25,23 @@ public:
         maxPdfValue_(
             static_cast<const AcceptRejectSampling &>(other).maxPdfValue_) {}
 
-  std::array<NumericType, 2> sample(RNG &rngState) const override final {
+  std::array<NumericType, 2> sample(RNG &rngState) override final {
     std::uniform_real_distribution<NumericType> uniform(0, 1);
+    std::uniform_real_distribution<NumericType> uniformX(bounds_[0][0],
+                                                         bounds_[0][1]);
+    std::uniform_real_distribution<NumericType> uniformY(bounds_[1][0],
+                                                         bounds_[1][1]);
 
-    NumericType x =
-        uniform(rngState) * (bounds_[0][1] - bounds_[0][0]) + bounds_[0][0];
-    NumericType y =
-        uniform(rngState) * (bounds_[1][1] - bounds_[1][0]) + bounds_[1][0];
+    NumericType u, x, y, pdfValue;
 
-    auto [i, j] = findBin(x, y);
-    NumericType pdfValue = pdfValues_[i][j];
-    NumericType u = uniform(rngState);
-
-    while (u * maxPdfValue_ > pdfValue) {
-      x = uniform(rngState) * (bounds_[0][1] - bounds_[0][0]) + bounds_[0][0];
-      y = uniform(rngState) * (bounds_[1][1] - bounds_[1][0]) + bounds_[1][0];
+    do {
+      x = uniformX(rngState);
+      y = uniformY(rngState);
+      u = uniform(rngState);
 
       auto [i, j] = findBin(x, y);
       pdfValue = pdfValues_[i][j];
-      u = uniform(rngState);
-    }
+    } while (u * maxPdfValue_ > pdfValue);
 
     return {x, y};
   }
