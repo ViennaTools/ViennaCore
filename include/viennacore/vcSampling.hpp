@@ -9,11 +9,16 @@
 
 namespace viennacore {
 
+// Class for sampling from a given probability density function (PDF). The PDF
+// can be set either by providing a vector of PDF values and corresponding
+// x-values or by providing a function that evaluates the PDF at a given point.
+// The sampling is done using either the inverse transform method (D = 1) or the
+// accept-reject method (D = 2).
 template <class NumericType, int D> class Sampling {
   std::unique_ptr<BaseSamplingMethod<NumericType, D>> algo_;
 
 public:
-  Sampling() = default;
+  Sampling() { static_assert(D == 1 || D == 2, "D must be 1 or 2."); }
 
   Sampling(const Sampling &other) {
     if constexpr (D == 1) {
@@ -25,6 +30,9 @@ public:
   }
 
   Sampling &operator=(const Sampling &other) {
+    if (algo_)
+      algo_.reset();
+
     if (this != &other) {
       if constexpr (D == 1) {
         algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
@@ -37,9 +45,13 @@ public:
     return *this;
   }
 
+  // The sampling method in 1D can be either piecewise linear or piecewise
+  // constant.
+  template <
+      class SamplingMethod = std::piecewise_linear_distribution<NumericType>>
   void setPDF(const std::vector<NumericType> &pdfValues,
               const std::vector<NumericType> &xValues) {
-
+    static_assert(D == 1, "D must be 1 for univariate sampling.");
     Vec2D<NumericType> minBounds = getSupport(pdfValues, xValues);
 
     Logger::getInstance()
@@ -49,13 +61,16 @@ public:
 
     if (algo_)
       algo_.reset();
-    algo_ = std::make_unique<InverseTransformSampling<NumericType>>(xValues,
-                                                                    pdfValues);
+    algo_ =
+        std::make_unique<InverseTransformSampling<NumericType, SamplingMethod>>(
+            xValues, pdfValues);
   }
 
+  template <
+      class SamplingMethod = std::piecewise_linear_distribution<NumericType>>
   void setPDF(const std::function<NumericType(NumericType)> &pdf,
               const Vec2D<NumericType> &bounds, const unsigned nBins) {
-
+    static_assert(D == 1, "D must be 1 for univariate sampling.");
     std::vector<NumericType> pdfValues(nBins);
     std::vector<NumericType> xValues(nBins);
     const NumericType step = (bounds[1] - bounds[0]) / (nBins - 1);
@@ -64,13 +79,13 @@ public:
       pdfValues[i] = pdf(xValues[i]);
     }
 
-    setPDF(pdfValues, xValues);
+    setPDF<SamplingMethod>(pdfValues, xValues);
   }
 
   void setPDF(const std::vector<std::vector<NumericType>> &pdfValues,
               const std::vector<NumericType> &xValues,
               const std::vector<NumericType> &yValues) {
-
+    static_assert(D == 2, "D must be 2 for bivariate sampling.");
     NumericType maxValue = 0;
     auto support = getSupport(pdfValues, {xValues, yValues}, maxValue);
 
@@ -90,7 +105,7 @@ public:
   void setPDF(const std::function<NumericType(NumericType, NumericType)> &pdf,
               const std::array<Vec2D<NumericType>, 2> &bounds,
               const std::array<unsigned, D> &nBins) {
-
+    static_assert(D == 2, "D must be 2 for bivariate sampling.");
     std::vector<std::vector<NumericType>> pdfValues(nBins[0]);
     std::vector<NumericType> xValues(nBins[0]);
     std::vector<NumericType> yValues(nBins[1]);
