@@ -28,7 +28,7 @@ void run1D() {
 }
 
 void run2D() {
-  // univariate sampling
+  // bivariate sampling
   Sampling<double, 2> s;
 
   auto pdf = [](double x, double y) {
@@ -37,6 +37,7 @@ void run2D() {
   std::array<Vec2D<double>, 2> bounds = {-5, 5, -5, 5};
   s.setPDF(pdf, bounds, {1000, 1000});
 
+  // test copy constructor
   auto copy = s;
 
   RNG rng(123512);
@@ -52,12 +53,51 @@ void run2D() {
   file.close();
 }
 
+void runCustom() {
+  Sampling<double, 1> s;
+
+  std::ifstream distFile("custom_distribution.txt");
+  std::vector<double> xValues;
+  std::vector<double> pdfValues;
+
+  if (!distFile.is_open()) {
+    std::cerr << "Could not open file\n";
+    return;
+  }
+
+  double x, pdf;
+  while (distFile >> x >> pdf) {
+    xValues.push_back(x);
+    pdfValues.push_back(pdf);
+  }
+
+  std::cout << "Read " << xValues.size() << " values\n";
+
+  s.setPDF(pdfValues, xValues);
+
+  // test copy constructor
+  auto copy = s;
+
+  RNG rng(123512);
+
+  std::fstream file;
+  file.open("samples_custom.txt", std::ios::out);
+
+  for (int i = 0; i < 10000; ++i) {
+    auto sample = copy.sample(rng);
+    file << sample[0] << "\n";
+  }
+
+  file.close();
+}
+
 int main() {
 
   Logger::setLogLevel(LogLevel::DEBUG);
 
   run1D();
   run2D();
+  runCustom();
 
   return 0;
 }
