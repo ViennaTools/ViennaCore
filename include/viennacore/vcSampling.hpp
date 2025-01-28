@@ -52,18 +52,24 @@ public:
   void setPDF(const std::vector<NumericType> &pdfValues,
               const std::vector<NumericType> &xValues) {
     static_assert(D == 1, "D must be 1 for univariate sampling.");
-    Vec2D<NumericType> minBounds = getSupport(pdfValues, xValues);
+
+    auto minBounds = getSupport(pdfValues, xValues);
+    auto trimmedPdfValues = std::vector<NumericType>(
+        pdfValues.begin() + minBounds[0], pdfValues.begin() + minBounds[1] + 1);
+    auto trimmedXValues = std::vector<NumericType>(
+        xValues.begin() + minBounds[0], xValues.begin() + minBounds[1] + 1);
 
     Logger::getInstance()
-        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
-                  " " + std::to_string(minBounds[1]))
+        .addDebug("Univariate PDF support: " +
+                  std::to_string(trimmedXValues.front()) + " " +
+                  std::to_string(trimmedXValues.back()))
         .print();
 
     if (algo_)
       algo_.reset();
     algo_ =
         std::make_unique<InverseTransformSampling<NumericType, SamplingMethod>>(
-            xValues, pdfValues);
+            trimmedXValues, trimmedPdfValues);
   }
 
   template <
@@ -82,6 +88,23 @@ public:
     setPDF<SamplingMethod>(pdfValues, xValues);
   }
 
+  void prepareAlias(const std::vector<NumericType> &pdfValues,
+                    const std::vector<NumericType> &xValues) {
+    static_assert(D == 1, "D must be 1 for univariate sampling.");
+    auto minBounds = getSupport(pdfValues, xValues);
+
+    Logger::getInstance()
+        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
+                  " " + std::to_string(minBounds[1]))
+        .print();
+
+    if (algo_)
+      algo_.reset();
+    // algo_ = std::make_unique<AliasSampling<NumericType>>(
+    // pdfValues, xValues, minBounds[0], minBounds[1] - minBounds[0]);
+  }
+
+  // 2D sampling is done using the accept-reject method.
   void setPDF(const std::vector<std::vector<NumericType>> &pdfValues,
               const std::vector<NumericType> &xValues,
               const std::vector<NumericType> &yValues) {
@@ -136,10 +159,11 @@ public:
   }
 
 private:
-  Vec2D<NumericType> getSupport(const std::vector<NumericType> &pdfValues,
-                                const std::vector<NumericType> &xValues) {
+  Vec2D<unsigned> getSupport(const std::vector<NumericType> &pdfValues,
+                             const std::vector<NumericType> &xValues) {
     assert(pdfValues.size() == xValues.size());
-    Vec2D<NumericType> support = {xValues.front(), xValues.back()};
+    assert(pdfValues.size() > 0);
+    Vec2D<unsigned> support = {0, static_cast<unsigned>(xValues.size() - 1)};
     unsigned nBins = pdfValues.size();
 
     // look for lower bound
@@ -149,7 +173,7 @@ private:
         foundMin = true;
         break;
       }
-      support[0] = xValues[i];
+      support[0] = i;
     }
 
     if (!foundMin) {
@@ -160,7 +184,7 @@ private:
     for (unsigned i = nBins - 1; i > 0; --i) {
       if (pdfValues[i] > 1e-6)
         break;
-      support[1] = xValues[i];
+      support[1] = i;
     }
 
     return support;
