@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <filesystem>
 #include <optix_stubs.h>
 #include <string>
 #include <vector>
@@ -35,7 +36,7 @@ static void contextLogCallback(unsigned int level, const char *tag,
 struct Context_t {
   CUmodule getModule(const std::string &moduleName);
 
-  std::string modulePath;
+  std::filesystem::path modulePath;
   std::vector<std::string> moduleNames;
   std::vector<CUmodule> modules;
 
@@ -56,9 +57,8 @@ CUmodule Context_t::getModule(const std::string &moduleName) {
     }
   }
   if (idx < 0) {
-    std::string modName = moduleName.data();
     viennacore::Logger::getInstance()
-        .addError("Module " + modName + " not in context.")
+        .addError("Module " + moduleName + " not in context.")
         .print();
   }
 
@@ -75,8 +75,7 @@ void AddModule(const std::string &moduleName, Context context) {
 
   CUmodule module;
   CUresult err;
-
-  err = cuModuleLoad(&module, (context->modulePath + "/" + moduleName).c_str());
+  err = cuModuleLoad(&module, (context->modulePath / moduleName).c_str());
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError(moduleName, err).print();
 
@@ -85,7 +84,7 @@ void AddModule(const std::string &moduleName, Context context) {
 }
 
 void CreateContext(Context &context,
-                   std::string modulePath = VIENNAPS_KERNELS_PATH,
+                   std::filesystem::path modulePath = VIENNAPS_KERNELS_PATH,
                    const int deviceID = 0) {
 
   // create new context
@@ -127,7 +126,7 @@ void CreateContext(Context &context,
 
   // add default modules
   viennacore::Logger::getInstance()
-      .addDebug("PTX kernels path: " + modulePath)
+      .addDebug("PTX kernels path: " + modulePath.string())
       .print();
 
   AddModule("normKernels.ptx", context);
