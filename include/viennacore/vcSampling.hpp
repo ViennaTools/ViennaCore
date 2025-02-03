@@ -1,11 +1,13 @@
 #pragma once
 
 #include "vcAcceptRejectSampling.hpp"
+#include "vcAliasSampling.hpp"
 #include "vcInverseTransformSampling.hpp"
 #include "vcLogger.hpp"
 
 #include <functional>
 #include <memory>
+#include <queue>
 
 namespace viennacore {
 
@@ -14,7 +16,7 @@ namespace viennacore {
 // x-values or by providing a function that evaluates the PDF at a given point.
 // The sampling is done using either the inverse transform method (D = 1) or the
 // accept-reject method (D = 2).
-template <class NumericType, int D> class Sampling {
+template <class NumericType, int D, bool useAlias = false> class Sampling {
   std::unique_ptr<BaseSamplingMethod<NumericType, D>> algo_;
 
 public:
@@ -22,8 +24,12 @@ public:
 
   Sampling(const Sampling &other) {
     if constexpr (D == 1) {
-      algo_ =
-          std::make_unique<InverseTransformSampling<NumericType>>(*other.algo_);
+      if constexpr (useAlias) {
+        algo_ = std::make_unique<AliasSampling<NumericType>>(*other.algo_);
+      } else {
+        algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
+            *other.algo_);
+      }
     } else if constexpr (D == 2) {
       algo_ = std::make_unique<AcceptRejectSampling<NumericType>>(*other.algo_);
     }
@@ -35,8 +41,12 @@ public:
 
     if (this != &other) {
       if constexpr (D == 1) {
-        algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
-            *other.algo_);
+        if constexpr (useAlias) {
+          algo_ = std::make_unique<AliasSampling<NumericType>>(*other.algo_);
+        } else {
+          algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
+              *other.algo_);
+        }
       } else if constexpr (D == 2) {
         algo_ =
             std::make_unique<AcceptRejectSampling<NumericType>>(*other.algo_);
@@ -52,18 +62,85 @@ public:
   void setPDF(const std::vector<NumericType> &pdfValues,
               const std::vector<NumericType> &xValues) {
     static_assert(D == 1, "D must be 1 for univariate sampling.");
-    Vec2D<NumericType> minBounds = getSupport(pdfValues, xValues);
+
+    auto minBounds = getSupport(pdfValues, xValues);
+    auto trimmedPdfValues = std::vector<NumericType>(
+        pdfValues.begin() + minBounds[0], pdfValues.begin() + minBounds[1] + 1);
+    auto trimmedXValues = std::vector<NumericType>(
+        xValues.begin() + minBounds[0], xValues.begin() + minBounds[1] + 1);
 
     Logger::getInstance()
-        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
-                  " " + std::to_string(minBounds[1]))
+        .addDebug("Univariate PDF support: " +
+                  std::to_string(trimmedXValues.front()) + " " +
+                  std::to_string(trimmedXValues.back()))
         .print();
 
     if (algo_)
       algo_.reset();
-    algo_ =
-        std::make_unique<InverseTransformSampling<NumericType, SamplingMethod>>(
-            xValues, pdfValues);
+
+    if constexpr (useAlias) {
+      // prepare alias table (stable Vose algorithm)
+
+      // normalize PDF
+      NumericType sum = 0;
+      for (auto &pdf : trimmedPdfValues) {
+        sum += pdf;
+      }
+
+      for (auto &pdf : trimmedPdfValues) {
+        pdf /= sum;
+      }
+
+      std::vector<NumericType> probabilities(trimmedPdfValues.size());
+      std::vector<NumericType> alias(trimmedPdfValues.size());
+
+      std::queue<unsigned> small;
+      std::queue<unsigned> large;
+
+      for (unsigned i = 0; i < trimmedPdfValues.size(); ++i) {
+        probabilities[i] = trimmedPdfValues[i] * trimmedPdfValues.size();
+        if (probabilities[i] < 1)
+          small.push(i);
+        else
+          large.push(i);
+      }
+
+      while (!small.empty() && !large.empty()) {
+        unsigned less = small.front();
+        small.pop();
+        unsigned more = large.front();
+        large.pop();
+
+        alias[less] = more;
+        probabilities[more] = probabilities[more] + probabilities[less] - 1;
+        if (probabilities[more] < 1)
+          small.push(more);
+        else
+          large.push(more);
+      }
+
+      while (!large.empty()) {
+        unsigned last = large.front();
+        large.pop();
+        probabilities[last] = 1;
+      }
+
+      while (!small.empty()) {
+        unsigned last = small.front();
+        small.pop();
+        probabilities[last] = 1;
+      }
+
+      algo_ = std::make_unique<AliasSampling<NumericType>>(
+          probabilities, alias, trimmedXValues.front(),
+          (trimmedXValues.back() - trimmedXValues.front()) /
+              trimmedPdfValues.size());
+
+    } else {
+      algo_ = std::make_unique<
+          InverseTransformSampling<NumericType, SamplingMethod>>(
+          trimmedXValues, trimmedPdfValues);
+    }
   }
 
   template <
@@ -82,6 +159,23 @@ public:
     setPDF<SamplingMethod>(pdfValues, xValues);
   }
 
+  void prepareAlias(const std::vector<NumericType> &pdfValues,
+                    const std::vector<NumericType> &xValues) {
+    static_assert(D == 1, "D must be 1 for univariate sampling.");
+    auto minBounds = getSupport(pdfValues, xValues);
+
+    Logger::getInstance()
+        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
+                  " " + std::to_string(minBounds[1]))
+        .print();
+
+    if (algo_)
+      algo_.reset();
+    // algo_ = std::make_unique<AliasSampling<NumericType>>(
+    // pdfValues, xValues, minBounds[0], minBounds[1] - minBounds[0]);
+  }
+
+  // 2D sampling is done using the accept-reject method.
   void setPDF(const std::vector<std::vector<NumericType>> &pdfValues,
               const std::vector<NumericType> &xValues,
               const std::vector<NumericType> &yValues) {
@@ -136,10 +230,11 @@ public:
   }
 
 private:
-  Vec2D<NumericType> getSupport(const std::vector<NumericType> &pdfValues,
-                                const std::vector<NumericType> &xValues) {
+  Vec2D<unsigned> getSupport(const std::vector<NumericType> &pdfValues,
+                             const std::vector<NumericType> &xValues) {
     assert(pdfValues.size() == xValues.size());
-    Vec2D<NumericType> support = {xValues.front(), xValues.back()};
+    assert(pdfValues.size() > 0);
+    Vec2D<unsigned> support = {0, static_cast<unsigned>(xValues.size() - 1)};
     unsigned nBins = pdfValues.size();
 
     // look for lower bound
@@ -149,7 +244,7 @@ private:
         foundMin = true;
         break;
       }
-      support[0] = xValues[i];
+      support[0] = i;
     }
 
     if (!foundMin) {
@@ -160,7 +255,7 @@ private:
     for (unsigned i = nBins - 1; i > 0; --i) {
       if (pdfValues[i] > 1e-6)
         break;
-      support[1] = xValues[i];
+      support[1] = i;
     }
 
     return support;

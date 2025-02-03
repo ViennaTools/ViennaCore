@@ -27,6 +27,28 @@ void run1D() {
   file.close();
 }
 
+void runAlias() {
+  // univariate sampling
+  Sampling<double, 1, true> s;
+
+  auto pdf = [](double x) { return std::exp(-(x * x)); };
+  s.setPDF(pdf, {-5, 5}, 1000);
+
+  auto copy = s;
+
+  RNG rng(123512);
+
+  std::fstream file;
+  file.open("samples_1D_alias.txt", std::ios::out);
+
+  for (int i = 0; i < 10000; ++i) {
+    auto sample = copy.sample(rng);
+    file << sample[0] << "\n";
+  }
+
+  file.close();
+}
+
 void run2D() {
   // bivariate sampling
   Sampling<double, 2> s;
@@ -97,6 +119,7 @@ int main() {
 
   run1D();
   run2D();
+  runAlias();
   runCustom();
 
   return 0;
