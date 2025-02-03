@@ -27,8 +27,24 @@ int main() {
   }
   timer.finish();
 
+  std::cout << "Time to generate " << n << " 1D samples (piecewise constant): "
+            << timer.currentDuration * 1e-6 << " ms" << "\n";
+
+  // alias sampling
+  Sampling<double, 1, true> s_alias;
+  s_alias.setPDF(pdf, {-5, 5}, 1000);
+
+  timer.start();
+  sum = 0;
+  for (int i = 0; i < n; ++i) {
+    auto sample = s_alias.sample(rng);
+    sum += sample[0];
+  }
+  timer.finish();
+
   std::cout << "Time to generate " << n
-            << " 1D samples: " << timer.currentDuration * 1e-6 << " ms" << "\n";
+            << " 1D samples (alias method): " << timer.currentDuration * 1e-6
+            << " ms" << "\n";
 
   // bivariate sampling
   Sampling<double, 2> s_2;

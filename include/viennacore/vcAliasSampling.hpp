@@ -22,7 +22,7 @@ public:
                 NumericType size)
       : probabilities_(probabilities), alias_(alias), min_(min), size_(size) {}
 
-  AliasSampling(const BaseSamplingMethod<NumericType, 2> &other)
+  AliasSampling(const BaseSamplingMethod<NumericType, 1> &other)
       : probabilities_(
             static_cast<const AliasSampling &>(other).probabilities_),
         alias_(static_cast<const AliasSampling &>(other).alias_),
@@ -39,7 +39,7 @@ public:
     if (u > probabilities_[i])
       bin = alias_[i];
 
-    return {min_ + bin * size_ + u * size_ / probabilities_.size()};
+    return {min_ + bin * size_ + uniform(rngState) * size_};
   }
 };
 } // namespace viennacore

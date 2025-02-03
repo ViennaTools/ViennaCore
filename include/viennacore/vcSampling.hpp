@@ -1,11 +1,13 @@
 #pragma once
 
 #include "vcAcceptRejectSampling.hpp"
+#include "vcAliasSampling.hpp"
 #include "vcInverseTransformSampling.hpp"
 #include "vcLogger.hpp"
 
 #include <functional>
 #include <memory>
+#include <queue>
 
 namespace viennacore {
 
@@ -14,7 +16,7 @@ namespace viennacore {
 // x-values or by providing a function that evaluates the PDF at a given point.
 // The sampling is done using either the inverse transform method (D = 1) or the
 // accept-reject method (D = 2).
-template <class NumericType, int D> class Sampling {
+template <class NumericType, int D, bool useAlias = false> class Sampling {
   std::unique_ptr<BaseSamplingMethod<NumericType, D>> algo_;
 
 public:
@@ -22,8 +24,12 @@ public:
 
   Sampling(const Sampling &other) {
     if constexpr (D == 1) {
-      algo_ =
-          std::make_unique<InverseTransformSampling<NumericType>>(*other.algo_);
+      if constexpr (useAlias) {
+        algo_ = std::make_unique<AliasSampling<NumericType>>(*other.algo_);
+      } else {
+        algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
+            *other.algo_);
+      }
     } else if constexpr (D == 2) {
       algo_ = std::make_unique<AcceptRejectSampling<NumericType>>(*other.algo_);
     }
@@ -35,8 +41,12 @@ public:
 
     if (this != &other) {
       if constexpr (D == 1) {
-        algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
-            *other.algo_);
+        if constexpr (useAlias) {
+          algo_ = std::make_unique<AliasSampling<NumericType>>(*other.algo_);
+        } else {
+          algo_ = std::make_unique<InverseTransformSampling<NumericType>>(
+              *other.algo_);
+        }
       } else if constexpr (D == 2) {
         algo_ =
             std::make_unique<AcceptRejectSampling<NumericType>>(*other.algo_);
@@ -67,9 +77,70 @@ public:
 
     if (algo_)
       algo_.reset();
-    algo_ =
-        std::make_unique<InverseTransformSampling<NumericType, SamplingMethod>>(
-            trimmedXValues, trimmedPdfValues);
+
+    if constexpr (useAlias) {
+      // prepare alias table (stable Vose algorithm)
+
+      // normalize PDF
+      NumericType sum = 0;
+      for (auto &pdf : trimmedPdfValues) {
+        sum += pdf;
+      }
+
+      for (auto &pdf : trimmedPdfValues) {
+        pdf /= sum;
+      }
+
+      std::vector<NumericType> probabilities(trimmedPdfValues.size());
+      std::vector<NumericType> alias(trimmedPdfValues.size());
+
+      std::queue<unsigned> small;
+      std::queue<unsigned> large;
+
+      for (unsigned i = 0; i < trimmedPdfValues.size(); ++i) {
+        probabilities[i] = trimmedPdfValues[i] * trimmedPdfValues.size();
+        if (probabilities[i] < 1)
+          small.push(i);
+        else
+          large.push(i);
+      }
+
+      while (!small.empty() && !large.empty()) {
+        unsigned less = small.front();
+        small.pop();
+        unsigned more = large.front();
+        large.pop();
+
+        alias[less] = more;
+        probabilities[more] = probabilities[more] + probabilities[less] - 1;
+        if (probabilities[more] < 1)
+          small.push(more);
+        else
+          large.push(more);
+      }
+
+      while (!large.empty()) {
+        unsigned last = large.front();
+        large.pop();
+        probabilities[last] = 1;
+      }
+
+      while (!small.empty()) {
+        unsigned last = small.front();
+        small.pop();
+        probabilities[last] = 1;
+      }
+
+      algo_ = std::make_unique<AliasSampling<NumericType>>(
+          probabilities, alias, trimmedXValues.front(),
+          (trimmedXValues.back() - trimmedXValues.front()) /
+              trimmedPdfValues.size());
+
+    } else {
+      algo_ = std::make_unique<
+          InverseTransformSampling<NumericType, SamplingMethod>>(
+          trimmedXValues, trimmedPdfValues);
+    }
   }
 
   template <
