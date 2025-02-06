@@ -2,6 +2,7 @@
 
 #include <vcLogger.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -73,6 +74,11 @@ void AddModule(const std::string &moduleName, Context context) {
         .print();
   }
 
+  if (std::find(context->moduleNames.begin(), context->moduleNames.end(),
+                moduleName) != context->moduleNames.end()) {
+    return;
+  }
+
   CUmodule module;
   CUresult err;
   err = cuModuleLoad(&module, (context->modulePath / moduleName).c_str());
@@ -128,8 +134,6 @@ void CreateContext(Context &context,
   viennacore::Logger::getInstance()
       .addDebug("PTX kernels path: " + modulePath.string())
       .print();
-
-  AddModule("normKernels.ptx", context);
 
   // initialize OptiX context
   OPTIX_CHECK(optixInit());
