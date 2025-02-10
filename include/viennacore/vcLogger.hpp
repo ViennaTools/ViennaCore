@@ -5,6 +5,18 @@
 #include <iostream>
 #include <string>
 
+#ifdef VIENNACORE_COMPILE_GPU
+#include <cuda.h>
+#endif
+
+#define TM_RED "\033[1;31m"
+#define TM_GREEN "\033[1;32m"
+#define TM_YELLOW "\033[1;33m"
+#define TM_BLUE "\033[1;34m"
+#define TM_RESET "\033[0m"
+#define TM_DEFAULT TM_RESET
+#define TM_BOLD "\033[1;1m"
+
 namespace viennacore {
 
 // verbosity levels:
@@ -59,7 +71,7 @@ public:
     if (getLogLevel() < 5)
       return *this;
 #pragma omp critical
-    { message += std::string(tabWidth, ' ') + "DEBUG: " + s + "\n"; }
+    { message += std::string(tabWidth, ' ') + TM_GREEN + "DEBUG: " + s + "\n"; }
     return *this;
   }
 
@@ -116,7 +128,10 @@ public:
     if (getLogLevel() < 1)
       return *this;
 #pragma omp critical
-    { message += "\n" + std::string(tabWidth, ' ') + "WARNING: " + s + "\n"; }
+    {
+      message += "\n" + std::string(tabWidth, ' ') + TM_YELLOW +
+                 "WARNING: " + s + "\n";
+    }
     return *this;
   }
 
@@ -124,7 +139,8 @@ public:
   Logger &addError(std::string s, bool shouldAbort = true) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + "ERROR: " + s + "\n";
+      message +=
+          "\n" + std::string(tabWidth, ' ') + TM_RED + "ERROR: " + s + "\n";
       // always abort once error message should be printed
       error = true;
     }
@@ -134,12 +150,71 @@ public:
     return *this;
   }
 
+#ifdef VIENNACORE_COMPILE_GPU
+  std::string getErrorString(CUresult err) {
+    const char *errorMsg[2048];
+    cuGetErrorString(err, errorMsg);
+    std::string errorString = *errorMsg;
+    return errorString;
+  }
+
+  Logger &addModuleError(std::string moduleName, CUresult err,
+                         bool shouldAbort = true) {
+#pragma omp critical
+    {
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
+                 "ERROR in CUDA module " + moduleName + ": " +
+                 getErrorString(err) + "\n";
+      // always abort once error message should be printed
+      error = true;
+    }
+    // abort now if asked
+    if (shouldAbort)
+      print();
+    return *this;
+  }
+
+  Logger &addFunctionError(std::string kernelName, CUresult err,
+                           bool shouldAbort = true) {
+#pragma omp critical
+    {
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
+                 "ERROR in CUDA kernel " + kernelName + ": " +
+                 getErrorString(err) + "\n";
+      // always abort once error message should be printed
+      error = true;
+    }
+    // abort now if asked
+    if (shouldAbort)
+      print();
+    return *this;
+  }
+
+  Logger &addLaunchError(std::string kernelName, CUresult err,
+                         bool shouldAbort = true) {
+#pragma omp critical
+    {
+      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
+                 "ERROR in CUDA kernel launch (" + kernelName +
+                 "): " + getErrorString(err) + "\n";
+      // always abort once error message should be printed
+      error = true;
+    }
+    // abort now if asked
+    if (shouldAbort)
+      print();
+    return *this;
+  }
+#endif
+
   // Print message to std::cout if log level is high enough.
   void print(std::ostream &out = std::cout) {
 #pragma omp critical
     {
       out << message;
+      out << TM_RESET;
       message.clear();
+      out.flush();
       if (error)
         abort();
     }

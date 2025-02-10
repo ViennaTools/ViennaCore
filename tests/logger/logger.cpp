@@ -17,7 +17,7 @@ int main() {
   logger.addDebug("Debug message");
   logger.print(ss);
 
-  VC_TEST_ASSERT(ss.str() == "    DEBUG: Debug message\n");
+  VC_TEST_ASSERT(ss.str() == "    \033[1;32mDEBUG: Debug message\n\033[0m");
   ss.str("");
 
   logger.setLogLevel(LogLevel::TIMING);
@@ -31,13 +31,14 @@ int main() {
   logger.addInfo("Info message");
   logger.print(ss);
 
-  VC_TEST_ASSERT(ss.str() == "    Info message\n");
+  VC_TEST_ASSERT(ss.str() == "    Info message\n\033[0m");
   ss.str("");
 
   logger.setLogLevel(LogLevel::WARNING);
   logger.addWarning("Warning message");
   logger.print(ss);
 
-  VC_TEST_ASSERT(ss.str() == "\n    WARNING: Warning message\n");
+  VC_TEST_ASSERT(ss.str() ==
+                 "\n    \033[1;33mWARNING: Warning message\n\033[0m");
   ss.str("");
 }
