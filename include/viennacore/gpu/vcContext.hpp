@@ -101,8 +101,7 @@ void Context::addModule(const std::string &moduleName) {
   moduleNames.push_back(moduleName);
 }
 
-void Context::create(std::filesystem::path modulePath = VIENNAPS_KERNELS_PATH,
-                     const int deviceID = 0) {
+void Context::create(std::filesystem::path modulePath, const int deviceID) {
 
   // create new context
   this->modulePath = modulePath;
