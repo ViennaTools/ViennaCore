@@ -25,7 +25,7 @@ public:
         maxPdfValue_(
             static_cast<const AcceptRejectSampling &>(other).maxPdfValue_) {}
 
-  std::array<NumericType, 2> sample(RNG &rngState) override final {
+  std::array<NumericType, 2> sample(RNG &rngState) final {
     std::uniform_real_distribution<NumericType> uniform(0, 1);
     std::uniform_real_distribution<NumericType> uniformX(bounds_[0][0],
                                                          bounds_[0][1]);
@@ -48,10 +48,10 @@ public:
 
 private:
   std::pair<unsigned, unsigned> findBin(NumericType x, NumericType y) const {
-    unsigned i = static_cast<unsigned>((x - bounds_[0][0]) /
+    auto i = static_cast<unsigned>((x - bounds_[0][0]) /
                                        (bounds_[0][1] - bounds_[0][0]) *
                                        pdfValues_.size());
-    unsigned j = static_cast<unsigned>((y - bounds_[1][0]) /
+    auto j = static_cast<unsigned>((y - bounds_[1][0]) /
                                        (bounds_[1][1] - bounds_[1][0]) *
                                        pdfValues_[0].size());
     return {i, j};

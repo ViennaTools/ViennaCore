@@ -55,6 +55,8 @@ public:
     return *this;
   }
 
+  bool hasPDF() const { return algo_ != nullptr; }
+
   // The sampling method in 1D can be either piecewise linear or piecewise
   // constant.
   template <
@@ -233,7 +235,7 @@ private:
   Vec2D<unsigned> getSupport(const std::vector<NumericType> &pdfValues,
                              const std::vector<NumericType> &xValues) {
     assert(pdfValues.size() == xValues.size());
-    assert(pdfValues.size() > 0);
+    assert(!pdfValues.empty());
     Vec2D<unsigned> support = {0, static_cast<unsigned>(xValues.size() - 1)};
     unsigned nBins = pdfValues.size();
 
@@ -248,7 +250,7 @@ private:
     }
 
     if (!foundMin) {
-      Logger::getInstance().addError("Univariate PDF is zero everywhere.");
+      Logger::getInstance().addError("Uni-variate PDF is zero everywhere.");
     }
 
     // look for upper bound

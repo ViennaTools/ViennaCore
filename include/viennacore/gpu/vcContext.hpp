@@ -34,8 +34,22 @@ static void contextLogCallback(unsigned int level, const char *tag,
 #endif
 }
 
-struct Context_t {
+struct Context {
+  void create(std::filesystem::path modulePath = VIENNAPS_KERNELS_PATH,
+              const int deviceID = 0);
   CUmodule getModule(const std::string &moduleName);
+  void addModule(const std::string &moduleName);
+  void destroy() {
+    if (deviceID == -1)
+      return;
+
+    for (auto module : modules) {
+      cuModuleUnload(module);
+    }
+    optixDeviceContextDestroy(optix);
+    cuCtxDestroy(cuda);
+    deviceID = -1;
+  }
 
   std::filesystem::path modulePath;
   std::vector<std::string> moduleNames;
@@ -44,12 +58,10 @@ struct Context_t {
   CUcontext cuda;
   cudaDeviceProp deviceProps;
   OptixDeviceContext optix;
-  int deviceID;
+  int deviceID = -1;
 };
 
-using Context = Context_t *;
-
-CUmodule Context_t::getModule(const std::string &moduleName) {
+CUmodule Context::getModule(const std::string &moduleName) {
   int idx = -1;
   for (int i = 0; i < modules.size(); i++) {
     if (this->moduleNames[i] == moduleName) {
@@ -66,37 +78,34 @@ CUmodule Context_t::getModule(const std::string &moduleName) {
   return modules[idx];
 }
 
-void AddModule(const std::string &moduleName, Context context) {
-  if (context == nullptr) {
+void Context::addModule(const std::string &moduleName) {
+  if (deviceID == -1) {
     viennacore::Logger::getInstance()
-        .addError("Context not initialized. Use 'CreateContext' to "
+        .addError("Context not initialized. Use 'create' to "
                   "initialize context.")
         .print();
   }
 
-  if (std::find(context->moduleNames.begin(), context->moduleNames.end(),
-                moduleName) != context->moduleNames.end()) {
+  if (std::find(moduleNames.begin(), moduleNames.end(), moduleName) !=
+      moduleNames.end()) {
     return;
   }
 
   CUmodule module;
   CUresult err;
-  err = cuModuleLoad(&module, (context->modulePath / moduleName).c_str());
+  err = cuModuleLoad(&module, (modulePath / moduleName).c_str());
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError(moduleName, err).print();
 
-  context->modules.push_back(module);
-  context->moduleNames.push_back(moduleName);
+  modules.push_back(module);
+  moduleNames.push_back(moduleName);
 }
 
-void CreateContext(Context &context,
-                   std::filesystem::path modulePath = VIENNAPS_KERNELS_PATH,
-                   const int deviceID = 0) {
+void Context::create(std::filesystem::path modulePath, const int deviceID) {
 
   // create new context
-  context = new Context_t;
-  context->modulePath = modulePath;
-  context->deviceID = deviceID;
+  this->modulePath = modulePath;
+  this->deviceID = deviceID;
 
   // initialize CUDA runtime API (cuda## prefix, cuda_runtime_api.h)
   CUDA_CHECK(Free(0));
@@ -110,9 +119,9 @@ void CreateContext(Context &context,
   }
 
   cudaSetDevice(deviceID);
-  cudaGetDeviceProperties(&context->deviceProps, deviceID);
+  cudaGetDeviceProperties(&deviceProps, deviceID);
   viennacore::Logger::getInstance()
-      .addDebug("Running on device: " + std::string(context->deviceProps.name))
+      .addDebug("Running on device: " + std::string(deviceProps.name))
       .print();
 
   // initialize CUDA driver API (cu## prefix, cuda.h)
@@ -122,7 +131,7 @@ void CreateContext(Context &context,
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError("cuInit", err).print();
 
-  err = cuCtxGetCurrent(&context->cuda);
+  err = cuCtxGetCurrent(&(cuda));
   if (err != CUDA_SUCCESS) {
     viennacore::Logger::getInstance()
         .addError("Error querying current context: error code " +
@@ -138,11 +147,8 @@ void CreateContext(Context &context,
   // initialize OptiX context
   OPTIX_CHECK(optixInit());
 
-  optixDeviceContextCreate(context->cuda, 0, &context->optix);
-  optixDeviceContextSetLogCallback(context->optix, contextLogCallback, nullptr,
-                                   4);
+  optixDeviceContextCreate(cuda, 0, &optix);
+  optixDeviceContextSetLogCallback(optix, contextLogCallback, nullptr, 4);
 }
-
-void ReleaseContext(Context context) { delete context; }
 
 } // namespace viennacore

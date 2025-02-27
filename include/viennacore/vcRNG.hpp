@@ -1,18 +1,14 @@
 #pragma once
 
-#include <memory>
 #include <random>
 
 namespace viennacore {
-
 /// Use mersenne twister 19937 as random number generator.
 using RNG = std::mt19937_64;
 
 // tiny encryption algorithm
 template <unsigned int N>
-static unsigned int tea(unsigned int val0, unsigned int val1) {
-  unsigned int v0 = val0;
-  unsigned int v1 = val1;
+static unsigned int tea(unsigned int v0, unsigned int v1) {
   unsigned int s0 = 0;
 
   for (unsigned int n = 0; n < N; n++) {

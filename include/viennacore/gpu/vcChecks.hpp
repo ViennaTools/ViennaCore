@@ -6,14 +6,16 @@
 #include <optix_stubs.h>
 #include <sstream>
 
+#include "vcLogger.hpp"
+
 #define CUDA_CHECK(call)                                                       \
   {                                                                            \
     cudaError_t rc = cuda##call;                                               \
     if (rc != cudaSuccess) {                                                   \
       std::stringstream txt;                                                   \
       cudaError_t err = rc; /*cudaGetLastError();*/                            \
-      txt << "CUDA Error " << cudaGetErrorName(err) << " ("                    \
-          << cudaGetErrorString(err) << ")";                                   \
+      txt << TM_RED << "CUDA Error " << cudaGetErrorName(err) << " ("          \
+          << cudaGetErrorString(err) << ")" << TM_RESET;                       \
       std::cerr << txt.str() << std::endl;                                     \
       exit(2);                                                                 \
     }                                                                          \
@@ -26,8 +28,10 @@
   {                                                                            \
     OptixResult res = call;                                                    \
     if (res != OPTIX_SUCCESS) {                                                \
-      fprintf(stderr, "Optix call (%s) failed with code %d (line %d)\n",       \
-              #call, res, __LINE__);                                           \
+      fprintf(stderr,                                                          \
+              "\033[1;31mOptix call (%s) failed with code %d (%s: line %d): "  \
+              "%s\033[0m\n",                                                   \
+              #call, res, __FILE__, __LINE__, optixGetErrorString(res));       \
       exit(2);                                                                 \
     }                                                                          \
   }
@@ -37,8 +41,8 @@
     cudaDeviceSynchronize();                                                   \
     cudaError_t error = cudaGetLastError();                                    \
     if (error != cudaSuccess) {                                                \
-      fprintf(stderr, "error (%s: line %d): %s\n", __FILE__, __LINE__,         \
-              cudaGetErrorString(error));                                      \
+      fprintf(stderr, "\033[1;31mCuda Error (%s: line %d): %s\033[0m\n",       \
+              __FILE__, __LINE__, cudaGetErrorString(error));                  \
       exit(2);                                                                 \
     }                                                                          \
   }

@@ -56,7 +56,7 @@ class KDTree {
   Node *rootNode = nullptr;
 
 public:
-  KDTree() {}
+  KDTree() = default;
 
   KDTree(const std::vector<ValueType> &passedPoints) {
     if (!passedPoints.empty()) {
@@ -164,7 +164,7 @@ public:
   }
 
   void build() {
-    if (nodes.size() == 0) {
+    if (nodes.empty()) {
       Logger::getInstance().addWarning("KDTree: No points provided!").print();
       return;
     }
@@ -322,7 +322,6 @@ private:
       else
         traverseDown(currentNode->left, best, x);
     }
-    return;
   }
 
   template <typename Q,
@@ -373,7 +372,6 @@ private:
       else
         traverseDown(currentNode->left, queue, x);
     }
-    return;
   }
 
   /****************************************************************************

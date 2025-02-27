@@ -28,7 +28,7 @@ public:
   InverseTransformSampling(const BaseSamplingMethod<NumericType, 1> &other)
       : dist_(static_cast<const InverseTransformSampling &>(other).dist_) {}
 
-  std::array<NumericType, 1> sample(RNG &rngState) override final {
+  std::array<NumericType, 1> sample(RNG &rngState) final {
     return {dist_(rngState)};
   };
 };
