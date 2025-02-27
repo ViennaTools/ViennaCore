@@ -210,10 +210,10 @@ inline void ProgressBar(size_t i, size_t finalCount = 100) {
 
   std::cout << "[";
   int pos = static_cast<int>(static_cast<float>(barWidth) * progress);
-  for (int i = 0; i < barWidth; ++i) {
-    if (i < pos)
+  for (int j = 0; j < barWidth; ++j) {
+    if (j < pos)
       std::cout << "=";
-    else if (i == pos)
+    else if (j == pos)
       std::cout << ">";
     else
       std::cout << " ";
@@ -224,7 +224,7 @@ inline void ProgressBar(size_t i, size_t finalCount = 100) {
 
 // Print function for large numbers, printing 10000000 as "10M" instead
 inline std::string prettyDouble(const double val) {
-  const double absVal = abs(val);
+  const double absVal = std::abs(val);
   char result[1000];
 
   if (absVal >= 1e+18f)

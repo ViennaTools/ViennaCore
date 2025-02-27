@@ -29,7 +29,7 @@ public:
         min_(static_cast<const AliasSampling &>(other).min_),
         size_(static_cast<const AliasSampling &>(other).size_) {}
 
-  std::array<NumericType, 1> sample(RNG &rngState) override final {
+  std::array<NumericType, 1> sample(RNG &rngState) final {
     std::uniform_real_distribution<NumericType> uniform(0, 1);
 
     unsigned i = uniform(rngState) * probabilities_.size();
