@@ -46,7 +46,7 @@ include(cmake/cpm.cmake)
 
 CPMAddPackage(
   NAME PackageProject
-  VERSION 1.11.2
+  VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
 find_package(OpenMP REQUIRED)
