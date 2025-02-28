@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.1.0)
+  VERSION 1.2.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -64,6 +64,10 @@ include(utils/subdirs.cmake)
 
 include(utils/format.cmake)
 include(utils/sanitizer.cmake)
+
+set(VIENNACORE_CMAKE_TOOLS
+    "${CMAKE_SOURCE_DIR})/tools"
+    CACHE STRING "ViennaCore CMake tools directory")
 
 # --------------------------------------------------------------------------------------------------------
 # Setup Tests
