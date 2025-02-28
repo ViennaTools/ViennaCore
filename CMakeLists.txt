@@ -66,7 +66,7 @@ include(utils/format.cmake)
 include(utils/sanitizer.cmake)
 
 set(VIENNACORE_CMAKE_TOOLS
-    "${CMAKE_SOURCE_DIR})/tools"
+    "${PROJECT_SOURCE_DIR}/tools"
     CACHE STRING "ViennaCore CMake tools directory")
 
 # --------------------------------------------------------------------------------------------------------
