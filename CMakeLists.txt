@@ -8,8 +8,8 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNACORE_BUILD_TESTS "Build tests" ON)
-option(VIENNACORE_USE_GPU "Use CUDA functions" ON)
+option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
+option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
     ""
