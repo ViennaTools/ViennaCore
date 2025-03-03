@@ -88,7 +88,7 @@ endif()
 if(${VIENNACORE_USE_GPU})
   # Add ViennaCore tools paths to our CMake code to the module path, so they can be found automatically by
   # CMake (i.e. FindCUDA and FindOptiX).
-  set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+  set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
   find_package(CUDA 5.0 QUIET)
 
   # Find OptiX
