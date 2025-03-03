@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef VIENNACORE_COMPILE_GPU
+
 #include <cuda.h>
 #include <string>
 
@@ -64,3 +66,5 @@ public:
 };
 
 } // namespace viennacore
+
+#endif

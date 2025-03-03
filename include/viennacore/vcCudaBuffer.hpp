@@ -1,6 +1,8 @@
 #pragma once
 
-#include <assert.h>
+#ifdef VIENNACORE_COMPILE_GPU
+
+#include <cassert>
 #include <cstddef>
 #include <cuda_runtime.h>
 #include <vector>
@@ -11,7 +13,9 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
-  inline CUdeviceptr dPointer() const { return (CUdeviceptr)d_ptr; }
+  [[nodiscard]] inline CUdeviceptr dPointer() const {
+    return (CUdeviceptr)d_ptr;
+  }
 
   // re-size buffer to given number of bytes
   void resize(size_t size) {
@@ -78,3 +82,5 @@ struct CudaBuffer {
 };
 
 } // namespace viennacore
+
+#endif

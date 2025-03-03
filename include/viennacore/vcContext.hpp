@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vcLogger.hpp>
-
 #include <algorithm>
 #include <cassert>
 #include <cuda.h>
@@ -12,6 +10,7 @@
 #include <vector>
 
 #include "vcChecks.hpp"
+#include "vcLogger.hpp"
 
 // this include may only appear in a single source file:
 #include <optix_function_table_definition.h>
@@ -19,11 +18,11 @@
 #define STRINGIFY_HELPER(X) #X
 #define STRINGIFY(X) STRINGIFY_HELPER(X)
 
-#ifndef VIENNAPS_KERNELS_PATH_DEFINE
-#define VIENNAPS_KERNELS_PATH_DEFINE
+#ifndef VIENNACORE_KERNELS_PATH_DEFINE
+#define VIENNACORE_KERNELS_PATH_DEFINE
 #endif
 
-#define VIENNAPS_KERNELS_PATH STRINGIFY(VIENNAPS_KERNELS_PATH_DEFINE)
+#define VIENNACORE_KERNELS_PATH STRINGIFY(VIENNACORE_KERNELS_PATH_DEFINE)
 
 namespace viennacore {
 
@@ -35,7 +34,7 @@ static void contextLogCallback(unsigned int level, const char *tag,
 }
 
 struct Context {
-  void create(std::filesystem::path modulePath = VIENNAPS_KERNELS_PATH,
+  void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
               const int deviceID = 0);
   CUmodule getModule(const std::string &moduleName);
   void addModule(const std::string &moduleName);

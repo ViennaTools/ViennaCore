@@ -2,6 +2,8 @@
 
 #include "vcRNG.hpp"
 
+#include <array>
+
 namespace viennacore {
 
 template <class NumericType, int D> class BaseSamplingMethod {

@@ -8,7 +8,8 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
+option(VIENNACORE_BUILD_TESTS "Build tests" ON)
+option(VIENNACORE_USE_GPU "Use CUDA functions" ON)
 
 set(VIENNACORE_FORMAT_EXCLUDE
     ""
@@ -78,6 +79,51 @@ if(VIENNACORE_BUILD_TESTS)
 
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# Setup GPU
+# --------------------------------------------------------------------------------------------------------
+
+if(${VIENNACORE_USE_GPU})
+  # Add ViennaCore tools paths to our CMake code to the module path, so they can be found automatically by
+  # CMake (i.e. FindCUDA and FindOptiX).
+  set(CMAKE_MODULE_PATH ${VIENNACORE_CMAKE_TOOLS} ${CMAKE_MODULE_PATH})
+  find_package(CUDA 5.0 QUIET)
+
+  # Find OptiX
+  if("${is_cached}" STREQUAL "" AND DEFINED OptiX_INSTALL_DIR)
+    # Required for windows to convert backslashes to forward slashes
+    file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
+    set(OptiX_INSTALL_DIR
+        "${OptiX_INSTALL_DIR}"
+        CACHE PATH "Path to OptiX installation" FORCE)
+  else()
+    set(OptiX_INSTALL_DIR
+        $ENV{OptiX_INSTALL_DIR}
+        CACHE PATH "Path to OptiX installation.")
+  endif()
+
+  # Search for the OptiX include files.
+  find_package(OptiX QUIET)
+
+  # Requires both CUDA and OptiX
+  if(CUDA_FOUND AND OptiX_INCLUDE)
+    message(STATUS "[ViennaCore] Enabling GPU support")
+
+    target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE}>
+                                                         $<INSTALL_INTERFACE:${OptiX_INCLUDE}>)
+    target_link_libraries(${PROJECT_NAME} INTERFACE ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY})
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
+    set(VIENNACORE_PTX_DIR
+        "${CMAKE_BINARY_DIR}/lib/ptx"
+        CACHE STRING "Directory for compiled PTX files.")
+    target_compile_definitions(${PROJECT_NAME}
+                               INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
+  else()
+    set(VIENNACORE_USE_GPU OFF)
+    message(WARNING "CUDA Toolkit or OptiX not found. Skipping GPU build.")
+  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
