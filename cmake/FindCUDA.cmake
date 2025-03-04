@@ -952,7 +952,9 @@ endif()
 
 # Set the user list of include dir to nothing to initialize it.
 set(CUDA_NVCC_INCLUDE_ARGS_USER "")
-set(CUDA_INCLUDE_DIRS ${CUDA_TOOLKIT_INCLUDE})
+set(CUDA_INCLUDE_DIRS
+    ${CUDA_TOOLKIT_INCLUDE}
+    CACHE STRING "Cuda include directory" FORCE)
 
 macro(cuda_find_library_local_first_with_path_ext _var _names _doc _path_ext)
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
