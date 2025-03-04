@@ -111,16 +111,13 @@ if(${VIENNACORE_USE_GPU})
   if(CUDA_FOUND AND OptiX_INCLUDE)
     message(STATUS "[ViennaCore] Enabling GPU support")
     set(VIENNACORE_PTX_DIR
-        " ${CMAKE_BINARY_DIR}/lib/ptx"
+        "${CMAKE_BINARY_DIR}/lib/ptx"
         CACHE STRING "Directory for compiled PTX files.")
     include("cmake/setCudaFlags.cmake")
 
-    target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE}>
-                                                         $<INSTALL_INTERFACE:${OptiX_INCLUDE}>)
-    target_link_libraries(${PROJECT_NAME} INTERFACE ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY})
-    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
-    target_compile_definitions(${PROJECT_NAME}
-                               INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
+    target_compile_definitions(
+      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU
+                                VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
   else()
     set(VIENNACORE_USE_GPU OFF)
     message(WARNING "CUDA Toolkit or OptiX not found. Skipping GPU build.")
