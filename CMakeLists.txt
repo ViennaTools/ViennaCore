@@ -114,6 +114,9 @@ if(${VIENNACORE_USE_GPU})
         "${CMAKE_BINARY_DIR}/lib/ptx"
         CACHE STRING "Directory for compiled PTX files.")
     include("cmake/setCudaFlags.cmake")
+    set(CUDA_GENERATED_OUTPUT_DIR
+        ${VIENNACORE_PTX_DIR}
+        CACHE STRING "Generated PTX output directory" FORCE)
 
     target_compile_definitions(
       ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU
