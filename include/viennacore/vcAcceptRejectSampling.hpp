@@ -49,11 +49,11 @@ public:
 private:
   std::pair<unsigned, unsigned> findBin(NumericType x, NumericType y) const {
     auto i = static_cast<unsigned>((x - bounds_[0][0]) /
-                                       (bounds_[0][1] - bounds_[0][0]) *
-                                       pdfValues_.size());
+                                   (bounds_[0][1] - bounds_[0][0]) *
+                                   pdfValues_.size());
     auto j = static_cast<unsigned>((y - bounds_[1][0]) /
-                                       (bounds_[1][1] - bounds_[1][0]) *
-                                       pdfValues_[0].size());
+                                   (bounds_[1][1] - bounds_[1][0]) *
+                                   pdfValues_[0].size());
     return {i, j};
   };
 };
