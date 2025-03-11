@@ -10,6 +10,7 @@ int main() {
   std::stringstream ss;
   ss << "par1=1.0\n";
   ss << "par2=2.0\n";
+  ss << "par3=string_par\n";
 
   p.parseConfigStream(ss);
 
@@ -22,4 +23,7 @@ int main() {
   VC_TEST_ASSERT(par2 == 2.0);
   test_type = std::is_same_v<decltype(par2), float>;
   VC_TEST_ASSERT(test_type);
+
+  auto par3 = p.get<std::string>("par3");
+  VC_TEST_ASSERT(par3 == "string_par");
 }
