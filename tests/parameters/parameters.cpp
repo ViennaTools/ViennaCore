@@ -6,7 +6,7 @@
 using namespace viennacore;
 
 int main() {
-  Parameters p;
+  ParameterFile p;
   std::stringstream ss;
   ss << "par1=1.0\n";
   ss << "par2=2.0\n";

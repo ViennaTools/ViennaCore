@@ -128,7 +128,7 @@ void AssignItems(std::unordered_map<std::string, std::string> &map,
 }
 } // namespace impl
 
-struct Parameters {
+struct ParameterFile {
   std::unordered_map<std::string, std::string> m;
 
   bool exists(const std::string &key) const { return m.find(key) != m.end(); }
