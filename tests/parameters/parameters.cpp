@@ -1,18 +1,18 @@
-#include <vcParameterFile.hpp>
 #include <vcTestAsserts.hpp>
+#include <vcUtil.hpp>
 
 #include <sstream>
 
 using namespace viennacore;
 
 int main() {
-  ParameterFile p;
+  util::Parameters p;
   std::stringstream ss;
   ss << "par1=1.0\n";
   ss << "par2=2.0\n";
   ss << "par3=string_par\n";
 
-  p.parseConfigStream(ss);
+  p.readConfigStream(ss);
 
   auto par1 = p.get("par1");
   VC_TEST_ASSERT(par1 == 1.0);

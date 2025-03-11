@@ -1,11 +1,13 @@
 #pragma once
 
+#include "vcLogger.hpp"
+
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <optional>
 #include <regex>
 #include <sstream>
-#include <stdio.h>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -16,14 +18,12 @@
 #define vc_snprintf snprintf
 #endif
 
-namespace viennacore {
+namespace viennacore::util {
 
-namespace util {
-
-// Checks if a string starts with a - or not
+// Checks if a string starts with an - or not
 [[nodiscard]] inline bool isSigned(const std::string &s) {
-  auto pos = s.find_first_not_of(' ');
-  if (pos == s.npos)
+  const auto pos = s.find_first_not_of(' ');
+  if (pos == std::string::npos)
     return false;
   if (s[pos] == '-')
     return true;
@@ -37,8 +37,8 @@ template <typename T> [[nodiscard]] T convert(const std::string &s) {
   } else if constexpr (std::is_same_v<T, unsigned int>) {
     if (isSigned(s))
       throw std::invalid_argument("The value must be unsigned");
-    unsigned long int val = std::stoul(s);
-    unsigned int num = static_cast<unsigned int>(val);
+    const unsigned long int val = std::stoul(s);
+    auto num = static_cast<unsigned int>(val);
     if (val != num)
       throw std::out_of_range("The value is larger than the largest value "
                               "representable by `unsigned int`.");
@@ -63,6 +63,12 @@ template <typename T> [[nodiscard]] T convert(const std::string &s) {
     return std::stold(s);
   } else if constexpr (std::is_same_v<T, std::string>) {
     return s;
+  } else if constexpr (std::is_same_v<T, bool>) {
+    if (s == "true")
+      return true;
+    if (s == "false")
+      return false;
+    throw std::invalid_argument("The value must be either 'true' or 'false'");
   } else {
     // Throws a compile time error for all types but void
     return;
@@ -75,7 +81,7 @@ template <typename T> std::optional<T> safeConvert(const std::string &s) {
   T value;
   try {
     value = convert<T>(s);
-  } catch (std::exception &e) {
+  } catch (std::exception &) {
     std::cout << '\'' << s << "' couldn't be converted to type  '"
               << typeid(value).name() << "'\n";
     return std::nullopt;
@@ -105,10 +111,9 @@ parseConfigStream(std::istream &input) {
       continue;
 
     // Extract key and value
-    std::smatch smatch;
-    if (std::regex_search(line, smatch, keyValueRegex)) {
+    if (std::smatch smatch; std::regex_search(line, smatch, keyValueRegex)) {
       if (smatch.size() < 3) {
-        std::cerr << "Malformed line:\n " << line;
+        Logger::getInstance().addWarning("Malformed line: " + line).print();
         continue;
       }
 
@@ -140,14 +145,14 @@ public:
   K key;
   V &value;
 
-  Item(K key_, V &value_) : key(key_), value(value_), conv(&convert<V>) {}
+  Item(K key_, V &value_) : conv(&convert<V>), key(key_), value(value_) {}
 
-  Item(K key_, V &value_, C conv_) : key(key_), value(value_), conv(conv_) {}
+  Item(K key_, V &value_, C conv_) : conv(conv_), key(key_), value(value_) {}
 
   void operator()(const std::string &k) {
     try {
       value = conv(k);
-    } catch (std::exception &e) {
+    } catch (std::exception &) {
       std::cout << '\'' << k << "' couldn't be converted to type of parameter '"
                 << key << "'\n";
     }
@@ -192,11 +197,14 @@ struct Parameters {
 
   void readConfigFile(const std::string &fileName) { m = readFile(fileName); }
 
+  void readConfigStream(std::istream &input) { m = parseConfigStream(input); }
+
   template <typename T = double>
   [[nodiscard]] T get(const std::string &key) const {
     if (m.find(key) == m.end()) {
-      std::cout << "Key not found in parameters: " << key << std::endl;
-      exit(1);
+      Logger::getInstance()
+          .addError("Key not found in parameters: " + key)
+          .print();
       return T();
     }
     return convert<T>(m.at(key));
@@ -204,12 +212,12 @@ struct Parameters {
 };
 
 // Small function to print a progress bar ()
-inline void ProgressBar(size_t i, size_t finalCount = 100) {
-  float progress = static_cast<float>(i) / static_cast<float>(finalCount);
-  int barWidth = 70;
+inline void ProgressBar(const size_t i, const size_t finalCount = 100) {
+  const float progress = static_cast<float>(i) / static_cast<float>(finalCount);
+  constexpr int barWidth = 70;
 
   std::cout << "[";
-  int pos = static_cast<int>(static_cast<float>(barWidth) * progress);
+  const int pos = static_cast<int>(static_cast<float>(barWidth) * progress);
   for (int j = 0; j < barWidth; ++j) {
     if (j < pos)
       std::cout << "=";
@@ -250,11 +258,9 @@ inline std::string prettyDouble(const double val) {
   else if (absVal <= 1e-00f)
     vc_snprintf(result, 1000, "%.1f%c", val * 1e03f, 'm');
   else
-    vc_snprintf(result, 1000, "%f", (float)val);
+    vc_snprintf(result, 1000, "%f", static_cast<float>(val));
 
   return result;
 }
 
-} // namespace util
-
-} // namespace viennacore
+} // namespace viennacore::util
