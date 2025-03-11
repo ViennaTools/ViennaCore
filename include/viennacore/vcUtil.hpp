@@ -192,6 +192,10 @@ std::string arrayToString(const std::array<NumericType, D> arr) {
   return arrayStr.str();
 }
 
+inline std::string boolString(const int in) {
+  return in == 0 ? "false" : "true";
+}
+
 struct Parameters {
   std::unordered_map<std::string, std::string> m;
 
