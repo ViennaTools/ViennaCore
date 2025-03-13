@@ -8,9 +8,11 @@ using namespace viennacore;
 int main() {
   util::Parameters p;
   std::stringstream ss;
+
   ss << "par1=1.0\n";
-  ss << "par2=2.0\n";
-  ss << "par3=string_par\n";
+  ss << "par2= 2.0\n";
+  ss << "par3 =string_par\n";
+  ss << "par4 = 4\n";
 
   p.readConfigStream(ss);
 
@@ -26,4 +28,9 @@ int main() {
 
   auto par3 = p.get<std::string>("par3");
   VC_TEST_ASSERT(par3 == "string_par");
+
+  auto par4 = p.get<int>("par4");
+  VC_TEST_ASSERT(par4 == 4);
+  test_type = std::is_same_v<decltype(par4), int>;
+  VC_TEST_ASSERT(test_type);
 }
