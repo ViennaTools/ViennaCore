@@ -178,15 +178,6 @@ public:
   };
 };
 
-template <class S, class T, int D>
-S &operator<<(S &s, const VectorType<T, D> &v) {
-  s << "[" << v[0];
-  for (int i = 1; i < D; ++i)
-    s << "," << v[i];
-  s << "]";
-  return s;
-}
-
 template <typename NumericType> using Vec2D = VectorType<NumericType, 2>;
 
 template <typename NumericType> using Vec3D = VectorType<NumericType, 3>;
@@ -196,6 +187,9 @@ using Vec3Df = Vec3D<float>;
 
 using Vec2Dd = Vec2D<double>;
 using Vec3Dd = Vec3D<double>;
+
+using Vec2Di = Vec2D<int>;
+using Vec3Di = Vec3D<int>;
 
 /* ------------- Vector operation functions ------------- */
 
