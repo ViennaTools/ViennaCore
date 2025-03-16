@@ -9,7 +9,7 @@
 
 namespace viennacore {
 
-template <class T, size_t D> class VectorType {
+template <class T, int D> class VectorType {
   std::array<T, D> x = {};
 
 public:
@@ -20,16 +20,14 @@ public:
   VectorType(const VectorType &v) = default;
   VectorType &operator=(const VectorType &v) = default;
   explicit VectorType(const std::array<T, D> &v) { x = v; }
-  template <class T1, size_t D1>
-  explicit VectorType(const VectorType<T1, D1> &v) {
+  template <class T1, int D1> explicit VectorType(const VectorType<T1, D1> &v) {
     const int k = std::min(D, D1);
     for (int i = 0; i < k; ++i)
       x[i] = v[i];
     for (int i = k; i < D; ++i)
       x[i] = T(0);
   }
-  template <class T1, size_t D1>
-  explicit VectorType(const std::array<T1, D1> &v) {
+  template <class T1, int D1> explicit VectorType(const std::array<T1, D1> &v) {
     const int k = std::min(D, D1);
     for (int i = 0; i < k; ++i)
       x[i] = v[i];
@@ -248,7 +246,7 @@ _define_operator(-);
 
 #undef _define_operator
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
 Sum(const VectorType<NumericType, D> &pVecA,
     const VectorType<NumericType, D> &pVecB,
@@ -260,7 +258,7 @@ Sum(const VectorType<NumericType, D> &pVecA,
   return rr;
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 [[nodiscard]] __both__ NumericType
 DotProduct(const VectorType<NumericType, D> &pVecA,
            const VectorType<NumericType, D> &pVecB) {
@@ -287,7 +285,7 @@ template <class NumericType>
   return v1[0] * v2[1] - v1[1] * v2[0];
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 [[nodiscard]] __both__ NumericType Norm(const VectorType<NumericType, D> &vec) {
   NumericType norm = 0;
   for (size_t i = 0; i < D; ++i) {
@@ -296,7 +294,7 @@ template <typename NumericType, size_t D>
   return sqrt(norm);
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 void __both__ Normalize(VectorType<NumericType, D> &vec) {
   NumericType norm = 1. / Norm(vec);
   if (norm == 1.)
@@ -306,7 +304,7 @@ void __both__ Normalize(VectorType<NumericType, D> &vec) {
   }
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
 Normalize(const VectorType<NumericType, D> &vec) {
   VectorType<NumericType, D> normedVec = vec;
@@ -319,7 +317,7 @@ Normalize(const VectorType<NumericType, D> &vec) {
   return normedVec;
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 __both__ void ScaleToLength(VectorType<NumericType, D> &vec,
                             const NumericType length) {
   const auto vecLength = Norm(vec);
@@ -327,7 +325,7 @@ __both__ void ScaleToLength(VectorType<NumericType, D> &vec,
     vec[i] *= length / vecLength;
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
 Inv(const VectorType<NumericType, D> &vec) {
   VectorType<NumericType, D> rr;
@@ -337,7 +335,7 @@ Inv(const VectorType<NumericType, D> &vec) {
   return rr;
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 __both__ VectorType<NumericType, D>
 ScaleAdd(const VectorType<NumericType, D> &mult,
          const VectorType<NumericType, D> &add, const NumericType fac) {
@@ -348,7 +346,7 @@ ScaleAdd(const VectorType<NumericType, D> &mult,
   return rr;
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 __both__ [[nodiscard]] NumericType
 Distance(const VectorType<NumericType, D> &pVecA,
          const VectorType<NumericType, D> &pVecB) {
@@ -363,7 +361,7 @@ ComputeNormal(const Vec3D<Vec3D<NumericType>> &planeCoords) {
   return CrossProduct(uu, vv);
 }
 
-template <typename NumericType, size_t D>
+template <typename NumericType, int D>
 __both__ bool IsNormalized(const VectorType<NumericType, D> &vec) {
   constexpr double eps = 1e-4;
   auto norm = Norm(vec);
@@ -402,9 +400,72 @@ T ElementMax(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
   return v;
 }
 
+template <class T> T Volume(const VectorType<T, 2> *p) {
+  return ((p[1] - p[0]) % (p[2] - p[0]));
+}
+
+template <class T> T Volume(const VectorType<T, 3> *p) {
+  return ((p[1] - p[0]) * ((p[2] - p[0]) % (p[3] - p[0])));
+}
+
+template <int D, class T> VectorType<T, D> BitMaskToVector(unsigned int i) {
+  VectorType<T, D> tmp(T(0));
+  for (unsigned int k = 0; k < D; k++) {
+    if (((1 << k) & i) != 0)
+      ++tmp[k];
+  }
+  return tmp;
+}
+
+template <class T, int D> int MinIndex(const VectorType<T, D> &v) {
+  int idx = 0;
+  for (int i = 1; i < D; i++) {
+    if (v[i] < v[idx])
+      idx = i;
+  }
+  return idx;
+}
+
+template <class T, int D> int MaxIndex(const VectorType<T, D> &v) {
+  int idx = 0;
+  for (int i = 1; i < D; i++) {
+    if (v[i] > v[idx])
+      idx = i;
+  }
+  return idx;
+}
+
+template <class T> bool Orientation(const Vec3D<T> *v) {
+  return DotProduct(CrossProduct(v[1] - v[0], v[2] - v[0]), v[3] - v[0]) >= -0.;
+}
+
+template <class T> bool Orientation(const Vec2D<T> *v) {
+  return DotProduct(RotateLeft(v[1] - v[0]), v[2] - v[0]) >= -0.;
+}
+
+template <class T, int D>
+int Compare(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+  for (int i = D - 1; i >= 0; --i) {
+    if (v1[i] > v2[i])
+      return 1;
+    if (v1[i] < v2[i])
+      return -1;
+  }
+  return 0;
+}
+
+template <class T, int D>
+bool AnyEqualElement(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+  for (int i = 0; i < D - 1; ++i) {
+    if (v1[i] == v2[i])
+      return true;
+  }
+  return false;
+}
+
 /* ------------- Debug convenience functions ------------- */
 
-template <class S, typename T, size_t D>
+template <class S, typename T, int D>
 inline S &operator<<(S &o, const VectorType<T, D> &v) {
   o << "[" << v[0];
   for (size_t i = 1; i < D; ++i)
