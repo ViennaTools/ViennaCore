@@ -5,9 +5,9 @@ namespace viennacore {
 template <typename NumericType, int D> void RunTest() {
 
   if constexpr (D == 2) {
-    Vec2D<NumericType> vec2A = {1, 2};
+    Vec2D<NumericType> vec2A{1, 2};
 
-    Vec2D<NumericType> vec2B = {3, 4};
+    Vec2D<NumericType> vec2B{3, 4};
 
     Vec2D<NumericType> vec2C = vec2A + vec2B;
     VC_TEST_ASSERT(vec2C[0] == 4);
@@ -28,9 +28,9 @@ template <typename NumericType, int D> void RunTest() {
     VC_TEST_ASSERT_ISCLOSE(distance, 2.8284271247461903, 1e-6);
 
   } else {
-    Vec3D<NumericType> vec3A = {1, 2, 3};
+    Vec3D<NumericType> vec3A{1, 2, 3};
 
-    Vec3D<NumericType> vec3B = {4, 5, 6};
+    Vec3D<NumericType> vec3B{4, 5, 6};
 
     Vec3D<NumericType> vec3C = vec3A + vec3B;
     VC_TEST_ASSERT(vec3C[0] == 5);
@@ -53,6 +53,13 @@ template <typename NumericType, int D> void RunTest() {
     auto distance = Distance(vec3A, vec3B);
     VC_TEST_ASSERT_ISCLOSE(distance, 5.196152422706632, 1e-6);
   }
+
+  VectorType<NumericType, D> vec3A{1, 2, 3};
+  VectorType<NumericType, D> vec3B{4, 5, 6};
+  VectorType<NumericType, D> vec3C{7, 8, 9};
+
+  auto cross = CrossProduct(vec3A, vec3B);
+  std::cout << cross << std::endl;
 }
 } // namespace viennacore
 

@@ -236,7 +236,8 @@ private:
                              const std::vector<NumericType> &xValues) {
     assert(pdfValues.size() == xValues.size());
     assert(!pdfValues.empty());
-    Vec2D<unsigned> support = {0, static_cast<unsigned>(xValues.size() - 1)};
+    auto support =
+        Vec2D<unsigned>(0, static_cast<unsigned>(xValues.size() - 1));
     unsigned nBins = pdfValues.size();
 
     // look for lower bound
@@ -267,8 +268,8 @@ private:
   getSupport(const std::vector<std::vector<NumericType>> &pdfValues,
              const std::array<std::vector<NumericType>, 2> &grid,
              NumericType &maxValue) {
-    Vec2D<NumericType> support_x = {grid[0].back(), grid[0].front()};
-    Vec2D<NumericType> support_y = {grid[1].back(), grid[1].front()};
+    auto support_x = Vec2D<NumericType>{grid[0].back(), grid[0].front()};
+    auto support_y = Vec2D<NumericType>{grid[1].back(), grid[1].front()};
 
     unsigned nBins_x = grid[0].size();
     unsigned nBins_y = grid[1].size();

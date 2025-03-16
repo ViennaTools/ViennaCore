@@ -1,42 +1,197 @@
 #pragma once
 
+#include "vcUtil.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
 
-#if defined(__CUDACC__)
-#define __vc_device __device__
-#define __vc_host __host__
-#else
-#define __vc_device /* ignore */
-#define __vc_host   /* ignore */
-#endif
-
-#define __both__ __vc_host __vc_device
-
 namespace viennacore {
 
-#ifdef __CUDACC__
-using ::sin; // this is the double version
-// inline __both__ float sin(float f) { return ::sinf(f); }
-using ::cos; // this is the double version
-// inline __both__ float cos(float f) { return ::cosf(f); }
-#else
-using ::cos; // this is the double version
-using ::sin; // this is the double version
-#endif
+template <class T, size_t D> class VectorType {
+  std::array<T, D> x = {};
 
-namespace overloaded {
-/* move all those in a special namespace so they will never get
-   included - and thus, conflict with, the default namesapce */
-inline __both__ float sqrt(const float f) { return ::sqrtf(f); }
-inline __both__ double sqrt(const double d) { return ::sqrt(d); }
-} // namespace overloaded
+public:
+  typedef T value_type;
+  static constexpr int dimension = D;
 
-template <typename NumericType> using Vec2D = std::array<NumericType, 2>;
+  VectorType() = default;
+  VectorType(const VectorType &v) = default;
+  VectorType &operator=(const VectorType &v) = default;
+  explicit VectorType(const std::array<T, D> &v) { x = v; }
+  template <class T1, size_t D1>
+  explicit VectorType(const VectorType<T1, D1> &v) {
+    const int k = std::min(D, D1);
+    for (int i = 0; i < k; ++i)
+      x[i] = v[i];
+    for (int i = k; i < D; ++i)
+      x[i] = T(0);
+  }
+  template <class T1, size_t D1>
+  explicit VectorType(const std::array<T1, D1> &v) {
+    const int k = std::min(D, D1);
+    for (int i = 0; i < k; ++i)
+      x[i] = v[i];
+    for (int i = k; i < D; ++i)
+      x[i] = T(0);
+  }
+  explicit VectorType(const T v[]) {
+    for (int i = 0; i < D; i++)
+      x[i] = v[i];
+  }
+  explicit VectorType(T x0, T x1, T x2) {
+    x[0] = x0;
+    x[1] = x1;
+    if constexpr (D == 3)
+      x[2] = x2;
+  }
+  explicit VectorType(T x0, T x1) {
+    x[0] = x0;
+    x[1] = x1;
+  }
+  explicit VectorType(T d) {
+    for (int i = 0; i < D; i++)
+      x[i] = d;
+  }
+  template <class X> explicit VectorType(X d) {
+    for (int i = 0; i < D; i++)
+      x[i] = d[i];
+  }
 
-template <typename NumericType> using Vec3D = std::array<NumericType, 3>;
+  template <class V> VectorType &operator-=(const V &v) {
+    for (int i = 0; i < D; i++)
+      x[i] -= v[i];
+    return *this;
+  }
+  template <class V> VectorType &operator+=(const V &v) {
+    for (int i = 0; i < D; i++)
+      x[i] += v[i];
+    return *this;
+  }
+  VectorType &operator*=(T d) {
+    for (int i = 0; i < D; i++)
+      x[i] *= d;
+    return *this;
+  }
+  VectorType &operator/=(T d) {
+    for (int i = 0; i < D; i++)
+      x[i] /= d;
+    return *this;
+  }
+  VectorType operator-() const {
+    VectorType v;
+    for (int i = 0; i < D; i++)
+      v.x[i] = -x[i];
+    return v;
+  }
+
+  template <class V> bool operator==(const V &v) const {
+    for (int i = D - 1; i >= 0; --i)
+      if (x[i] != v[i])
+        return false;
+    return true;
+  }
+  template <class V> bool operator!=(const V &v) const {
+    for (int i = D - 1; i >= 0; --i)
+      if (x[i] != v[i])
+        return true;
+    return false;
+  }
+  template <class V> bool operator<(const V &v) const {
+    for (int i = D - 1; i >= 0; --i) {
+      if (x[i] < v[i])
+        return true;
+      if (x[i] > v[i])
+        return false;
+    }
+    return false;
+  }
+  template <class V> bool operator<=(const V &v) const { return !(*this > v); }
+  template <class V> bool operator>(const V &v) const {
+    for (int i = D - 1; i >= 0; --i) {
+      if (x[i] > v[i])
+        return true;
+      if (x[i] < v[i])
+        return false;
+    }
+    return false;
+  }
+  template <class V> bool operator>=(const V &v) const { return !(*this < v); }
+
+  T &operator[](int i) { return x[i]; }
+  const T &operator[](int i) const { return x[i]; }
+
+  template <class V> VectorType &operator=(const V &v) {
+    for (int i = 0; i < D; i++)
+      x[i] = v[i];
+    return *this;
+  }
+
+  T size() const { return x.size(); }
+  T max_element() const {
+    return *std::max_element(std::begin(x), std::end(x));
+  }
+  void sort() { std::sort(x, x + D); }
+  void reverse_sort() { std::sort(x, x + D, std::greater<T>()); }
+
+  T *data() { return x.data(); }
+  const T *data() const { return x.data(); }
+
+  auto begin() { return x.begin(); }
+  auto end() { return x.end(); }
+  auto begin() const { return x.begin(); }
+  auto end() const { return x.end(); }
+
+  void swap(VectorType &v) { x.swap(v.x); }
+
+  struct hash {
+  private:
+    static size_t hash_combine(size_t lhs, size_t rhs) {
+      lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
+      return lhs;
+    }
+
+  public:
+    size_t operator()(const VectorType<T, D> &v) const {
+      using std::hash;
+
+      /*
+        https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
+      */
+      size_t result = hash<T>()(v[0]);
+      result = hash_combine(result, hash<T>()(v[1]));
+      if (D == 3) {
+        result = hash_combine(result, hash<T>()(v[2]));
+      }
+      return result;
+
+      // Compute individual hash values for first,
+      // second and third and combine them using XOR
+      // and bit shifting:
+
+      // size_t result = hash<T>()(v[0]);
+      // result ^= hash<T>()(v[1]) << 1;
+      // if (D == 3) {
+      //   result = (result >> 1) ^ (hash<T>()(v[2]) << 1);
+      // }
+      // return result;
+    }
+  };
+};
+
+template <class S, class T, int D>
+S &operator<<(S &s, const VectorType<T, D> &v) {
+  s << "[" << v[0];
+  for (int i = 1; i < D; ++i)
+    s << "," << v[i];
+  s << "]";
+  return s;
+}
+
+template <typename NumericType> using Vec2D = VectorType<NumericType, 2>;
+
+template <typename NumericType> using Vec3D = VectorType<NumericType, 3>;
 
 using Vec2Df = Vec2D<float>;
 using Vec3Df = Vec3D<float>;
@@ -93,22 +248,22 @@ _define_operator(-);
 
 #undef _define_operator
 
-template <typename NumericType, std::size_t D>
-[[nodiscard]] __both__ std::array<NumericType, D>
-Sum(const std::array<NumericType, D> &pVecA,
-    const std::array<NumericType, D> &pVecB,
-    const std::array<NumericType, D> &pVecC) {
-  std::array<NumericType, D> rr;
+template <typename NumericType, size_t D>
+[[nodiscard]] __both__ VectorType<NumericType, D>
+Sum(const VectorType<NumericType, D> &pVecA,
+    const VectorType<NumericType, D> &pVecB,
+    const VectorType<NumericType, D> &pVecC) {
+  VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = pVecA[i] + pVecB[i] + pVecC[i];
   }
   return rr;
 }
 
-template <typename NumericType, std::size_t D>
+template <typename NumericType, size_t D>
 [[nodiscard]] __both__ NumericType
-DotProduct(const std::array<NumericType, D> &pVecA,
-           const std::array<NumericType, D> &pVecB) {
+DotProduct(const VectorType<NumericType, D> &pVecA,
+           const VectorType<NumericType, D> &pVecB) {
   NumericType dot = 0;
   for (size_t i = 0; i < D; ++i) {
     dot += pVecA[i] * pVecB[i];
@@ -126,8 +281,14 @@ CrossProduct(const Vec3D<NumericType> &pVecA, const Vec3D<NumericType> &pVecB) {
   return rr;
 }
 
-template <typename NumericType, std::size_t D>
-[[nodiscard]] __both__ NumericType Norm(const std::array<NumericType, D> &vec) {
+template <class NumericType>
+[[nodiscard]] NumericType CrossProduct(const Vec2D<NumericType> &v1,
+                                       const Vec2D<NumericType> &v2) {
+  return v1[0] * v2[1] - v1[1] * v2[0];
+}
+
+template <typename NumericType, size_t D>
+[[nodiscard]] __both__ NumericType Norm(const VectorType<NumericType, D> &vec) {
   NumericType norm = 0;
   for (size_t i = 0; i < D; ++i) {
     norm += vec[i] * vec[i];
@@ -135,8 +296,8 @@ template <typename NumericType, std::size_t D>
   return sqrt(norm);
 }
 
-template <typename NumericType, std::size_t D>
-void __both__ Normalize(std::array<NumericType, D> &vec) {
+template <typename NumericType, size_t D>
+void __both__ Normalize(VectorType<NumericType, D> &vec) {
   NumericType norm = 1. / Norm(vec);
   if (norm == 1.)
     return;
@@ -146,9 +307,9 @@ void __both__ Normalize(std::array<NumericType, D> &vec) {
 }
 
 template <typename NumericType, size_t D>
-[[nodiscard]] __both__ std::array<NumericType, D>
-Normalize(const std::array<NumericType, D> &vec) {
-  std::array<NumericType, D> normedVec = vec;
+[[nodiscard]] __both__ VectorType<NumericType, D>
+Normalize(const VectorType<NumericType, D> &vec) {
+  VectorType<NumericType, D> normedVec = vec;
   NumericType norm = NumericType(1) / Norm(normedVec);
   if (norm == NumericType(1))
     return normedVec;
@@ -158,29 +319,29 @@ Normalize(const std::array<NumericType, D> &vec) {
   return normedVec;
 }
 
-template <typename NumericType, std::size_t D>
-__both__ void ScaleToLength(std::array<NumericType, D> &vec,
+template <typename NumericType, size_t D>
+__both__ void ScaleToLength(VectorType<NumericType, D> &vec,
                             const NumericType length) {
   const auto vecLength = Norm(vec);
   for (size_t i = 0; i < D; i++)
     vec[i] *= length / vecLength;
 }
 
-template <typename NumericType, std::size_t D>
-[[nodiscard]] __both__ std::array<NumericType, D>
-Inv(const std::array<NumericType, D> &vec) {
-  std::array<NumericType, D> rr;
+template <typename NumericType, size_t D>
+[[nodiscard]] __both__ VectorType<NumericType, D>
+Inv(const VectorType<NumericType, D> &vec) {
+  VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = -vec[i];
   }
   return rr;
 }
 
-template <typename NumericType, std::size_t D>
-__both__ std::array<NumericType, D>
-ScaleAdd(const std::array<NumericType, D> &mult,
-         const std::array<NumericType, D> &add, const NumericType fac) {
-  std::array<NumericType, D> rr;
+template <typename NumericType, size_t D>
+__both__ VectorType<NumericType, D>
+ScaleAdd(const VectorType<NumericType, D> &mult,
+         const VectorType<NumericType, D> &add, const NumericType fac) {
+  VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = add[i] + mult[i] * fac;
   }
@@ -189,8 +350,8 @@ ScaleAdd(const std::array<NumericType, D> &mult,
 
 template <typename NumericType, size_t D>
 __both__ [[nodiscard]] NumericType
-Distance(const std::array<NumericType, D> &pVecA,
-         const std::array<NumericType, D> &pVecB) {
+Distance(const VectorType<NumericType, D> &pVecA,
+         const VectorType<NumericType, D> &pVecB) {
   return Norm(pVecA - pVecB);
 }
 
@@ -202,24 +363,53 @@ ComputeNormal(const Vec3D<Vec3D<NumericType>> &planeCoords) {
   return CrossProduct(uu, vv);
 }
 
-template <typename NumericType, std::size_t D>
-__both__ bool IsNormalized(const std::array<NumericType, D> &vec) {
+template <typename NumericType, size_t D>
+__both__ bool IsNormalized(const VectorType<NumericType, D> &vec) {
   constexpr double eps = 1e-4;
   auto norm = Norm(vec);
   return std::fabs(norm - 1) < eps;
 }
 
+template <class T> Vec2D<T> RotateLeft(const Vec2D<T> &v) {
+  return Vec2D<T>(-v[1], v[0]);
+}
+
+template <class T> Vec2D<T> RotateRight(const Vec2D<T> &v) {
+  return Vec2D<T>(v[1], -v[0]);
+}
+
+template <class T, int D>
+VectorType<T, D> Min(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+  VectorType<T, D> v;
+  for (int i = 0; i < D; i++)
+    v[i] = std::min(v1[i], v2[i]);
+  return v;
+}
+
+template <class T, int D>
+VectorType<T, D> Max(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+  VectorType<T, D> v;
+  for (int i = 0; i < D; i++)
+    v[i] = std::max(v1[i], v2[i]);
+  return v;
+}
+
+template <class T, int D>
+T ElementMax(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+  VectorType<T, D> v;
+  for (int i = 0; i < D; i++)
+    v[i] = std::max(v1[i], v2[i]);
+  return v;
+}
+
 /* ------------- Debug convenience functions ------------- */
 
-template <typename T, std::size_t D>
-inline std::ostream &operator<<(std::ostream &o, const std::array<T, D> &v) {
-  o << "(";
-  for (size_t i = 0; i < D; ++i) {
-    o << v[i];
-    if (i < D - 1)
-      o << ", ";
-  }
-  o << ")";
+template <class S, typename T, size_t D>
+inline S &operator<<(S &o, const VectorType<T, D> &v) {
+  o << "[" << v[0];
+  for (size_t i = 1; i < D; ++i)
+    o << ", " << v[i];
+  o << "]";
   return o;
 }
 
