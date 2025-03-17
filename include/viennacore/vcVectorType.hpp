@@ -285,8 +285,8 @@ CrossProduct(const Vec3D<NumericType> &pVecA, const Vec3D<NumericType> &pVecB) {
 }
 
 template <class NumericType>
-[[nodiscard]] NumericType CrossProduct(const Vec2D<NumericType> &v1,
-                                       const Vec2D<NumericType> &v2) {
+[[nodiscard]] __both__ NumericType CrossProduct(const Vec2D<NumericType> &v1,
+                                                const Vec2D<NumericType> &v2) {
   return v1[0] * v2[1] - v1[1] * v2[0];
 }
 
@@ -373,16 +373,17 @@ __both__ bool IsNormalized(const VectorType<NumericType, D> &vec) {
   return std::fabs(norm - 1) < eps;
 }
 
-template <class T> Vec2D<T> RotateLeft(const Vec2D<T> &v) {
+template <class T> __both__ Vec2D<T> RotateLeft(const Vec2D<T> &v) {
   return Vec2D<T>(-v[1], v[0]);
 }
 
-template <class T> Vec2D<T> RotateRight(const Vec2D<T> &v) {
+template <class T> Vec2D<T> __both__ RotateRight(const Vec2D<T> &v) {
   return Vec2D<T>(v[1], -v[0]);
 }
 
 template <class T, int D>
-VectorType<T, D> Min(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+__both__ VectorType<T, D> Min(const VectorType<T, D> &v1,
+                              const VectorType<T, D> &v2) {
   VectorType<T, D> v;
   for (int i = 0; i < D; i++)
     v[i] = std::min(v1[i], v2[i]);
@@ -390,7 +391,8 @@ VectorType<T, D> Min(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
 }
 
 template <class T, int D>
-VectorType<T, D> Max(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+__both__ VectorType<T, D> Max(const VectorType<T, D> &v1,
+                              const VectorType<T, D> &v2) {
   VectorType<T, D> v;
   for (int i = 0; i < D; i++)
     v[i] = std::max(v1[i], v2[i]);
@@ -398,20 +400,23 @@ VectorType<T, D> Max(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
 }
 
 template <class T, int D>
-T ElementMax(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+__both__ T ElementMax(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
   VectorType<T, D> v;
   for (int i = 0; i < D; i++)
     v[i] = std::max(v1[i], v2[i]);
   return v;
 }
 
-template <class T> T Volume(const VectorType<T, 2> &p) { return p[0] * p[1]; }
+template <class T> __both__ T Volume(const VectorType<T, 2> &p) {
+  return p[0] * p[1];
+}
 
-template <class T> T Volume(const VectorType<T, 3> &p) {
+template <class T> __both__ T Volume(const VectorType<T, 3> &p) {
   return p[0] * p[1] * p[2];
 }
 
-template <int D, class T> VectorType<T, D> BitMaskToVector(unsigned int i) {
+template <int D, class T>
+__both__ VectorType<T, D> BitMaskToVector(unsigned int i) {
   VectorType<T, D> tmp(T(0));
   for (unsigned int k = 0; k < D; k++) {
     if (((1 << k) & i) != 0)
@@ -420,7 +425,7 @@ template <int D, class T> VectorType<T, D> BitMaskToVector(unsigned int i) {
   return tmp;
 }
 
-template <class T, int D> int MinIndex(const VectorType<T, D> &v) {
+template <class T, int D> __both__ int MinIndex(const VectorType<T, D> &v) {
   int idx = 0;
   for (int i = 1; i < D; i++) {
     if (v[i] < v[idx])
@@ -429,7 +434,7 @@ template <class T, int D> int MinIndex(const VectorType<T, D> &v) {
   return idx;
 }
 
-template <class T, int D> int MaxIndex(const VectorType<T, D> &v) {
+template <class T, int D> __both__ int MaxIndex(const VectorType<T, D> &v) {
   int idx = 0;
   for (int i = 1; i < D; i++) {
     if (v[i] > v[idx])
@@ -438,16 +443,16 @@ template <class T, int D> int MaxIndex(const VectorType<T, D> &v) {
   return idx;
 }
 
-template <class T> bool Orientation(const Vec3D<T> *v) {
+template <class T> __both__ bool Orientation(const Vec3D<T> *v) {
   return DotProduct(CrossProduct(v[1] - v[0], v[2] - v[0]), v[3] - v[0]) >= -0.;
 }
 
-template <class T> bool Orientation(const Vec2D<T> *v) {
+template <class T> __both__ bool Orientation(const Vec2D<T> *v) {
   return DotProduct(RotateLeft(v[1] - v[0]), v[2] - v[0]) >= -0.;
 }
 
 template <class T, int D>
-int Compare(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+__both__ int Compare(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
   for (int i = D - 1; i >= 0; --i) {
     if (v1[i] > v2[i])
       return 1;
@@ -458,7 +463,8 @@ int Compare(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
 }
 
 template <class T, int D>
-bool AnyEqualElement(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
+__both__ bool AnyEqualElement(const VectorType<T, D> &v1,
+                              const VectorType<T, D> &v2) {
   for (int i = 0; i < D - 1; ++i) {
     if (v1[i] == v2[i])
       return true;
@@ -469,7 +475,7 @@ bool AnyEqualElement(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
 /* ------------- Debug convenience functions ------------- */
 
 template <class S, typename T, int D>
-inline S &operator<<(S &o, const VectorType<T, D> &v) {
+S &operator<<(S &o, const VectorType<T, D> &v) {
   o << "[" << v[0];
   for (size_t i = 1; i < D; ++i)
     o << ", " << v[i];
