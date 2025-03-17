@@ -1,7 +1,7 @@
 #pragma once
 
 #include "vcSamplingMethod.hpp"
-#include "vcVectorUtil.hpp"
+#include "vcVectorType.hpp"
 
 #include <vector>
 

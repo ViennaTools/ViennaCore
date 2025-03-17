@@ -13,7 +13,7 @@ template <class T, int D> class VectorType {
   std::array<T, D> x = {};
 
 public:
-  typedef T value_type;
+  using value_type = T;
   static constexpr int dimension = D;
 
   VectorType() = default;
@@ -119,6 +119,8 @@ public:
 
   T &operator[](int i) { return x[i]; }
   const T &operator[](int i) const { return x[i]; }
+  T &at(int i) { return x.at(i); }
+  const T &at(int i) const { return x.at(i); }
 
   template <class V> VectorType &operator=(const V &v) {
     for (int i = 0; i < D; i++)
@@ -141,7 +143,8 @@ public:
   auto begin() const { return x.begin(); }
   auto end() const { return x.end(); }
 
-  void swap(VectorType &v) { x.swap(v.x); }
+  void swap(VectorType &v) noexcept { x.swap(v.x); }
+  void fill(T value) { std::fill(x.begin(), x.end(), value); }
 
   struct hash {
   private:
@@ -182,14 +185,22 @@ template <typename NumericType> using Vec2D = VectorType<NumericType, 2>;
 
 template <typename NumericType> using Vec3D = VectorType<NumericType, 3>;
 
-using Vec2Df = Vec2D<float>;
-using Vec3Df = Vec3D<float>;
+#define _define_vec_types(T, t)                                                \
+  using Vec2D##t = VectorType<T, 2>;                                           \
+  using Vec3D##t = VectorType<T, 3>;
 
-using Vec2Dd = Vec2D<double>;
-using Vec3Dd = Vec3D<double>;
+_define_vec_types(int8_t, c);
+_define_vec_types(int16_t, s);
+_define_vec_types(int32_t, i);
+_define_vec_types(int64_t, l);
+_define_vec_types(uint8_t, uc);
+_define_vec_types(uint16_t, us);
+_define_vec_types(uint32_t, ui);
+_define_vec_types(uint64_t, ul);
+_define_vec_types(float, f);
+_define_vec_types(double, d);
 
-using Vec2Di = Vec2D<int>;
-using Vec3Di = Vec3D<int>;
+#undef _define_vec_types
 
 /* ------------- Vector operation functions ------------- */
 
@@ -394,12 +405,10 @@ T ElementMax(const VectorType<T, D> &v1, const VectorType<T, D> &v2) {
   return v;
 }
 
-template <class T> T Volume(const VectorType<T, 2> *p) {
-  return ((p[1] - p[0]) % (p[2] - p[0]));
-}
+template <class T> T Volume(const VectorType<T, 2> &p) { return p[0] * p[1]; }
 
-template <class T> T Volume(const VectorType<T, 3> *p) {
-  return ((p[1] - p[0]) * ((p[2] - p[0]) % (p[3] - p[0])));
+template <class T> T Volume(const VectorType<T, 3> &p) {
+  return p[0] * p[1] * p[2];
 }
 
 template <int D, class T> VectorType<T, D> BitMaskToVector(unsigned int i) {

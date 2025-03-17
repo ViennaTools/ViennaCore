@@ -2,6 +2,7 @@
 
 #include "vcLogger.hpp"
 
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -42,7 +43,7 @@ using ::sin; // this is the double version
 
 namespace overloaded {
 /* move all those in a special namespace so they will never get
-   included - and thus, conflict with, the default namesapce */
+   included - and thus, conflict with, the default namespace */
 inline __both__ float sqrt(const float f) { return ::sqrtf(f); }
 inline __both__ double sqrt(const double d) { return ::sqrt(d); }
 } // namespace overloaded

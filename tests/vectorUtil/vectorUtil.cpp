@@ -1,8 +1,11 @@
 #include <vcTestAsserts.hpp>
-#include <vcVectorUtil.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacore {
 template <typename NumericType, int D> void RunTest() {
+
+  Vec3Dd vecDouble(0.);
+  Vec3Di vecInt(0);
 
   if constexpr (D == 2) {
     Vec2D<NumericType> vec2A{1, 2};
