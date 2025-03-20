@@ -132,8 +132,8 @@ public:
   T max_element() const {
     return *std::max_element(std::begin(x), std::end(x));
   }
-  void sort() { std::sort(x, x + D); }
-  void reverse_sort() { std::sort(x, x + D, std::greater<T>()); }
+  void sort() { std::sort(x.begin(), x.end()); }
+  void reverse_sort() { std::sort(x.begin(), x.end(), std::greater<T>()); }
 
   T *data() { return x.data(); }
   const T *data() const { return x.data(); }

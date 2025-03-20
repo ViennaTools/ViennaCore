@@ -63,6 +63,17 @@ template <typename NumericType, int D> void RunTest() {
 
   auto cross = CrossProduct(vec3A, vec3B);
   std::cout << cross << std::endl;
+
+  VectorType<NumericType, 3> vec3D{4, 9, 3};
+  vec3D.sort();
+  VC_TEST_ASSERT(vec3D[0] == 3);
+  VC_TEST_ASSERT(vec3D[1] == 4);
+  VC_TEST_ASSERT(vec3D[2] == 9);
+
+  vec3D.reverse_sort();
+  VC_TEST_ASSERT(vec3D[0] == 9);
+  VC_TEST_ASSERT(vec3D[1] == 4);
+  VC_TEST_ASSERT(vec3D[2] == 3);
 }
 } // namespace viennacore
 
