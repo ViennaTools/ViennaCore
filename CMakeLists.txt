@@ -8,8 +8,9 @@ project(
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
-option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
+option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
 option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
+option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
     ""
@@ -50,39 +51,17 @@ CPMAddPackage(
   VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
-find_package(OpenMP REQUIRED)
-target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
-
-# --------------------------------------------------------------------------------------------------------
-# CMake Utilities
-# --------------------------------------------------------------------------------------------------------
-
-include(utils/setup.cmake)
-include(utils/python.cmake)
-
-include(utils/batch.cmake)
-include(utils/subdirs.cmake)
-
-include(utils/format.cmake)
-include(utils/sanitizer.cmake)
-
-# --------------------------------------------------------------------------------------------------------
-# Setup Tests
-# --------------------------------------------------------------------------------------------------------
-
-if(VIENNACORE_BUILD_TESTS)
-  message(STATUS "[ViennaCore] Building Tests")
-
-  enable_testing()
-  add_subdirectory(tests)
+if(VIENNACORE_USE_OPENMP)
+  find_package(OpenMP REQUIRED)
+  target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
 # Setup GPU
 # --------------------------------------------------------------------------------------------------------
 
-if(${VIENNACORE_USE_GPU})
-  # Add ViennaCore tools paths to our CMake code to the module path, so they can be found automatically by
+if(VIENNACORE_USE_GPU)
+  # Add ViennaCore cmake paths to our CMake code to the module path, so they can be found automatically by
   # CMake (i.e. FindCUDA and FindOptiX).
   set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
   find_package(CUDA 5.0 QUIET)
@@ -125,6 +104,30 @@ if(${VIENNACORE_USE_GPU})
     message(WARNING "CUDA Toolkit or OptiX not found. Skipping GPU build.")
     set(VIENNACORE_USE_GPU OFF)
   endif()
+endif()
+
+# --------------------------------------------------------------------------------------------------------
+# CMake Utilities
+# --------------------------------------------------------------------------------------------------------
+
+include(utils/setup.cmake)
+include(utils/python.cmake)
+
+include(utils/batch.cmake)
+include(utils/subdirs.cmake)
+
+include(utils/format.cmake)
+include(utils/sanitizer.cmake)
+
+# --------------------------------------------------------------------------------------------------------
+# Setup Tests
+# --------------------------------------------------------------------------------------------------------
+
+if(VIENNACORE_BUILD_TESTS)
+  message(STATUS "[ViennaCore] Building Tests")
+
+  enable_testing()
+  add_subdirectory(tests)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
