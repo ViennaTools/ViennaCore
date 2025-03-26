@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <string>
 
 namespace viennacore {
 
@@ -145,6 +146,14 @@ public:
 
   void swap(VectorType &v) noexcept { x.swap(v.x); }
   void fill(T value) { std::fill(x.begin(), x.end(), value); }
+
+  std::string toString() const {
+    std::string str = "[";
+    for (int i = 0; i < D - 1; i++)
+      str += std::to_string(x[i]) + ", ";
+    str += std::to_string(x[D - 1]) + "]";
+    return str;
+  }
 
   struct hash {
   private:
