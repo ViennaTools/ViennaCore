@@ -48,6 +48,10 @@ struct CudaBuffer {
 
   // free allocated memory
   void free() {
+    if (d_ptr == nullptr) {
+      assert(sizeInBytes == 0);
+      return;
+    }
     CUDA_CHECK(Free(d_ptr));
     d_ptr = nullptr;
     sizeInBytes = 0;
