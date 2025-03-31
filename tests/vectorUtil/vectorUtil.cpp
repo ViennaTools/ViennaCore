@@ -31,6 +31,15 @@ template <typename NumericType, int D> void RunTest() {
     VC_TEST_ASSERT_ISCLOSE(distance, 2.8284271247461903, 1e-6);
 
     auto cross = CrossProduct(vec2A, vec2B);
+
+    Normalize(vec2A);
+    VC_TEST_ASSERT(IsNormalized(vec2A));
+
+    const auto cvec2B = vec2B;
+    Vec2D<NumericType> nvec2B = Normalize(cvec2B);
+    VC_TEST_ASSERT(IsNormalized(nvec2B));
+    VC_TEST_ASSERT(vec2B[0] == 3);
+    VC_TEST_ASSERT(vec2B[1] == 4);
   } else {
     Vec3D<NumericType> vec3A{1, 2, 3};
 
@@ -65,6 +74,13 @@ template <typename NumericType, int D> void RunTest() {
 
   VectorHash<NumericType, D> hash;
   std::cout << "Hash: " << hash(vecTest) << std::endl;
+
+  Vec3D<NumericType> zeroVec{0, 0, 0};
+  Normalize(zeroVec);
+  VC_TEST_ASSERT(!IsNormalized(zeroVec));
+  VC_TEST_ASSERT(zeroVec[0] == 0);
+  VC_TEST_ASSERT(zeroVec[1] == 0);
+  VC_TEST_ASSERT(zeroVec[2] == 0);
 }
 } // namespace viennacore
 

@@ -135,25 +135,30 @@ template <typename NumericType, size_t D>
 
 template <typename NumericType, size_t D>
 void __both__ Normalize(VectorType<NumericType, D> &vec) {
-  NumericType norm = 1. / Norm(vec);
-  if (norm == 1.)
+  NumericType n = Norm(vec);
+  if (n <= 0.) {
+    std::fill(vec.begin(), vec.end(), NumericType(0));
+    return;
+  }
+  if (n == 1.)
     return;
   for (size_t i = 0; i < D; ++i) {
-    vec[i] *= norm;
+    vec[i] /= n;
   }
 }
 
 template <typename NumericType, size_t D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
 Normalize(const VectorType<NumericType, D> &vec) {
-  VectorType<NumericType, D> normedVec = vec;
-  NumericType norm = NumericType(1) / Norm(normedVec);
+  VectorType<NumericType, D> rr = vec;
+  NumericType norm = Norm(vec);
   if (norm == NumericType(1))
-    return normedVec;
-  for (size_t i = 0; i < D; ++i) {
-    normedVec[i] = norm * vec[i];
+    return rr;
+  if (norm <= NumericType(0)) {
+    std::fill(rr.begin(), rr.end(), NumericType(0));
+    return rr;
   }
-  return normedVec;
+  return rr / norm;
 }
 
 template <typename NumericType, size_t D>
