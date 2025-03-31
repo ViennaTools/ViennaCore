@@ -248,16 +248,6 @@ template <class T> __both__ T Volume(const VectorType<T, 3> &p) {
   return p[0] * p[1] * p[2];
 }
 
-template <int D, class T>
-__both__ VectorType<T, D> BitMaskToVector(unsigned int i) {
-  VectorType<T, D> tmp(T(0));
-  for (unsigned int k = 0; k < D; k++) {
-    if (((1 << k) & i) != 0)
-      ++tmp[k];
-  }
-  return tmp;
-}
-
 template <class T, size_t D> __both__ int MinIndex(const VectorType<T, D> &v) {
   int idx = 0;
   for (int i = 1; i < D; i++) {
