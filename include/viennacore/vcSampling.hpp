@@ -237,7 +237,7 @@ private:
     assert(pdfValues.size() == xValues.size());
     assert(!pdfValues.empty());
     auto support =
-        Vec2D<unsigned>(0, static_cast<unsigned>(xValues.size() - 1));
+        Vec2D<unsigned>{0, static_cast<unsigned>(xValues.size() - 1)};
     unsigned nBins = pdfValues.size();
 
     // look for lower bound

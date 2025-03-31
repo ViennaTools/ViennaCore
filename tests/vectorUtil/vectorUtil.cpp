@@ -4,8 +4,8 @@
 namespace viennacore {
 template <typename NumericType, int D> void RunTest() {
 
-  Vec3Dd vecDouble(0.);
-  Vec3Di vecInt(0);
+  Vec3Dd vecDouble;
+  Vec3Di vecInt;
 
   if constexpr (D == 2) {
     Vec2D<NumericType> vec2A{1, 2};
@@ -30,6 +30,7 @@ template <typename NumericType, int D> void RunTest() {
     auto distance = Distance(vec2A, vec2B);
     VC_TEST_ASSERT_ISCLOSE(distance, 2.8284271247461903, 1e-6);
 
+    auto cross = CrossProduct(vec2A, vec2B);
   } else {
     Vec3D<NumericType> vec3A{1, 2, 3};
 
@@ -55,25 +56,15 @@ template <typename NumericType, int D> void RunTest() {
 
     auto distance = Distance(vec3A, vec3B);
     VC_TEST_ASSERT_ISCLOSE(distance, 5.196152422706632, 1e-6);
+
+    auto cross = CrossProduct(vec3A, vec3B);
   }
 
-  VectorType<NumericType, D> vec3A{1, 2, 3};
-  VectorType<NumericType, D> vec3B{4, 5, 6};
-  VectorType<NumericType, D> vec3C{7, 8, 9};
+  VectorType<NumericType, D> vecTest;
+  std::fill(vecTest.begin(), vecTest.end(), 1.0);
 
-  auto cross = CrossProduct(vec3A, vec3B);
-  std::cout << cross << std::endl;
-
-  VectorType<NumericType, 3> vec3D{4, 9, 3};
-  vec3D.sort();
-  VC_TEST_ASSERT(vec3D[0] == 3);
-  VC_TEST_ASSERT(vec3D[1] == 4);
-  VC_TEST_ASSERT(vec3D[2] == 9);
-
-  vec3D.reverse_sort();
-  VC_TEST_ASSERT(vec3D[0] == 9);
-  VC_TEST_ASSERT(vec3D[1] == 4);
-  VC_TEST_ASSERT(vec3D[2] == 3);
+  VectorHash<NumericType, D> hash;
+  std::cout << "Hash: " << hash(vecTest) << std::endl;
 }
 } // namespace viennacore
 

@@ -19,7 +19,7 @@
 #define vc_snprintf snprintf
 #endif
 
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #define __vc_device __device__
 #define __vc_host __host__
 #else
