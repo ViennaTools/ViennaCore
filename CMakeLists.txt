@@ -13,7 +13,7 @@ option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
-    ""
+    "build"
     CACHE STRING "Regex to further filter formatted files")
 
 # --------------------------------------------------------------------------------------------------------
