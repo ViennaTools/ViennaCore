@@ -2,6 +2,7 @@
 
 #include "vcLogger.hpp"
 
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -18,7 +19,36 @@
 #define vc_snprintf snprintf
 #endif
 
-namespace viennacore::util {
+#ifdef __CUDACC__
+#define __vc_device __device__
+#define __vc_host __host__
+#else
+#define __vc_device /* ignore */
+#define __vc_host   /* ignore */
+#endif
+
+#define __both__ __vc_host __vc_device
+
+namespace viennacore {
+
+#ifdef __CUDACC__
+using ::sin; // this is the double version
+// inline __both__ float sin(float f) { return ::sinf(f); }
+using ::cos; // this is the double version
+// inline __both__ float cos(float f) { return ::cosf(f); }
+#else
+using ::cos; // this is the double version
+using ::sin; // this is the double version
+#endif
+
+namespace overloaded {
+/* move all those in a special namespace so they will never get
+   included - and thus, conflict with, the default namespace */
+inline __both__ float sqrt(const float f) { return ::sqrtf(f); }
+inline __both__ double sqrt(const double d) { return ::sqrt(d); }
+} // namespace overloaded
+
+namespace util {
 
 // Checks if a string starts with an - or not
 [[nodiscard]] inline bool isSigned(const std::string &s) {
@@ -267,4 +297,5 @@ inline std::string prettyDouble(const double val) {
   return result;
 }
 
-} // namespace viennacore::util
+} // namespace util
+} // namespace viennacore

@@ -10,7 +10,7 @@ void run1D() {
   Sampling<double, 1> s;
 
   auto pdf = [](double x) { return std::exp(-(x * x)); };
-  s.setPDF(pdf, {-5, 5}, 1000);
+  s.setPDF(pdf, Vec2Dd{-5, 5}, 1000);
 
   auto copy = s;
 
@@ -32,7 +32,7 @@ void runAlias() {
   Sampling<double, 1, true> s;
 
   auto pdf = [](double x) { return std::exp(-(x * x)); };
-  s.setPDF(pdf, {-5, 5}, 1000);
+  s.setPDF(pdf, Vec2Dd{-5, 5}, 1000);
 
   auto copy = s;
 
@@ -56,7 +56,8 @@ void run2D() {
   auto pdf = [](double x, double y) {
     return std::exp(-(x * x)) * std::exp(-(y * y));
   };
-  std::array<Vec2D<double>, 2> bounds = {-5, 5, -5, 5};
+  std::array<Vec2D<double>, 2> bounds = {Vec2D<double>{-5, 5},
+                                         Vec2D<double>{-5, 5}};
   s.setPDF(pdf, bounds, {1000, 1000});
 
   // test copy constructor
