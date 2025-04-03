@@ -3,8 +3,35 @@
 #include <random>
 
 namespace viennacore {
-/// Use mersenne twister 19937 as random number generator.
+#ifdef VIENNACORE_RNG_MT19937_64
 using RNG = std::mt19937_64;
+#elifdef VIENNACORE_RNG_MT19937_32
+using RNG = std::mt19937;
+#elifdef VIENNACORE_RNG_RANLUX48
+using RNG = std::ranlux48;
+#elifdef VIENNACORE_RNG_RANLUX24
+using RNG = std::ranlux24;
+#elifdef VIENNACORE_RNG_MINSTD
+using RNG = std::minstd_rand;
+#else
+using RNG = std::mt19937_64;
+#endif
+
+template <size_t N, class ValueType = uint_fast64_t> class RandonNumbers {
+  const std::array<ValueType, N> numbers_;
+  const ValueType min_, max_;
+
+public:
+  RandonNumbers(ValueType max) : max_(max) {}
+  RandonNumbers(std::array<ValueType, N> numbers, ValueType min, ValueType max)
+      : numbers_(numbers), min_(min), max_(max) {}
+
+  template <typename T> T get(size_t i) const {
+    return static_cast<T>(numbers_[i] / max_);
+  }
+
+  ValueType operator[](size_t i) const { return numbers_[i]; }
+};
 
 // tiny encryption algorithm
 template <unsigned int N>
