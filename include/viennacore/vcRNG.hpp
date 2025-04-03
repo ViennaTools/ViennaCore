@@ -18,11 +18,11 @@ using RNG = std::mt19937_64;
 #endif
 
 template <size_t N, class ValueType = uint_fast64_t> class RandonNumbers {
-  const std::array<ValueType, N> numbers_;
+  std::array<ValueType, N> numbers_;
   const ValueType min_, max_;
 
 public:
-  RandonNumbers(ValueType max) : max_(max) {}
+  RandonNumbers(ValueType min, ValueType max) : min_(min), max_(max) {}
   RandonNumbers(std::array<ValueType, N> numbers, ValueType min, ValueType max)
       : numbers_(numbers), min_(min), max_(max) {}
 
@@ -31,6 +31,7 @@ public:
   }
 
   ValueType operator[](size_t i) const { return numbers_[i]; }
+  ValueType &operator[](size_t i) { return numbers_[i]; }
 };
 
 // tiny encryption algorithm
