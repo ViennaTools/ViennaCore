@@ -1,6 +1,6 @@
 #pragma once
 
-#include <random>
+#include "vcPhiloxRNG.hpp"
 
 namespace viennacore {
 #ifdef VIENNACORE_RNG_MT19937_64
@@ -13,6 +13,8 @@ using RNG = std::ranlux48;
 using RNG = std::ranlux24;
 #elifdef VIENNACORE_RNG_MINSTD
 using RNG = std::minstd_rand;
+#elifdef VIENNACORE_RNG_PHILOX
+using RNG = viennacore::PhiloxRNG;
 #else
 using RNG = std::mt19937_64;
 #endif
@@ -26,8 +28,10 @@ public:
   RandonNumbers(std::array<ValueType, N> numbers, ValueType min, ValueType max)
       : numbers_(numbers), min_(min), max_(max) {}
 
-  template <typename T> T get(size_t i) const {
-    return static_cast<T>(numbers_[i] / max_);
+  template <typename T, std::enable_if_t<std::is_floating_point_v<T>,
+                                         std::nullptr_t> = std::nullptr_t()>
+  T get(size_t i) const {
+    return static_cast<T>(numbers_[i]) / static_cast<T>(max_);
   }
 
   ValueType operator[](size_t i) const { return numbers_[i]; }
