@@ -16,10 +16,10 @@ using RNG = std::minstd_rand;
 #elifdef VIENNACORE_RNG_PHILOX
 using RNG = viennacore::PhiloxRNG;
 #else
-using RNG = std::mt19937_64;
+using RNG = viennacore::PhiloxRNG;
 #endif
 
-template <size_t N, class ValueType = uint_fast64_t> class RandonNumbers {
+template <size_t N, class ValueType = uint32_t> class RandonNumbers {
   std::array<ValueType, N> numbers_;
   const ValueType min_, max_;
 
