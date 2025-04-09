@@ -21,17 +21,16 @@ using RNG = viennacore::PhiloxRNG;
 
 template <size_t N, class ValueType = uint32_t> class RandonNumbers {
   std::array<ValueType, N> numbers_;
-  const ValueType min_, max_;
 
 public:
-  RandonNumbers(ValueType min, ValueType max) : min_(min), max_(max) {}
-  RandonNumbers(std::array<ValueType, N> numbers, ValueType min, ValueType max)
-      : numbers_(numbers), min_(min), max_(max) {}
+  explicit RandonNumbers(const std::array<ValueType, N> &numbers)
+      : numbers_(numbers) {}
 
   template <typename T, std::enable_if_t<std::is_floating_point_v<T>,
                                          std::nullptr_t> = std::nullptr_t()>
   T get(size_t i) const {
-    return static_cast<T>(numbers_[i]) / static_cast<T>(max_);
+    return static_cast<T>(numbers_[i]) /
+           static_cast<T>(std::numeric_limits<ValueType>::max());
   }
 
   ValueType operator[](size_t i) const { return numbers_[i]; }

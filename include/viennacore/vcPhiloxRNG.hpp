@@ -13,7 +13,7 @@ class PhiloxRNG {
 public:
   using result_type = uint32_t;
 
-  PhiloxRNG(uint64_t seed = 0) { set_seed(seed); }
+  explicit PhiloxRNG(uint64_t seed = 0) { set_seed(seed); }
 
   void set_seed(uint64_t seed) {
     counter = {0, 0, 0, 0};
