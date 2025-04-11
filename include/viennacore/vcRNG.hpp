@@ -1,10 +1,41 @@
 #pragma once
 
-#include <random>
+#include "vcPhiloxRNG.hpp"
 
 namespace viennacore {
-/// Use mersenne twister 19937 as random number generator.
+#ifdef VIENNACORE_RNG_MT19937_64
 using RNG = std::mt19937_64;
+#elifdef VIENNACORE_RNG_MT19937_32
+using RNG = std::mt19937;
+#elifdef VIENNACORE_RNG_RANLUX48
+using RNG = std::ranlux48;
+#elifdef VIENNACORE_RNG_RANLUX24
+using RNG = std::ranlux24;
+#elifdef VIENNACORE_RNG_MINSTD
+using RNG = std::minstd_rand;
+#elifdef VIENNACORE_RNG_PHILOX
+using RNG = viennacore::PhiloxRNG;
+#else
+using RNG = viennacore::PhiloxRNG;
+#endif
+
+template <size_t N, class ValueType = uint32_t> class RandonNumbers {
+  std::array<ValueType, N> numbers_;
+
+public:
+  explicit RandonNumbers(const std::array<ValueType, N> &numbers)
+      : numbers_(numbers) {}
+
+  template <typename T, std::enable_if_t<std::is_floating_point_v<T>,
+                                         std::nullptr_t> = std::nullptr_t()>
+  T get(size_t i) const {
+    return static_cast<T>(numbers_[i]) /
+           static_cast<T>(std::numeric_limits<ValueType>::max());
+  }
+
+  ValueType operator[](size_t i) const { return numbers_[i]; }
+  ValueType &operator[](size_t i) { return numbers_[i]; }
+};
 
 // tiny encryption algorithm
 template <unsigned int N>
