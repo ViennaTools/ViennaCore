@@ -3,27 +3,27 @@
 #include "vcPhiloxRNG.hpp"
 
 namespace viennacore {
-#ifdef VIENNACORE_RNG_MT19937_64
+#if defined(VIENNACORE_RNG_MT19937_64)
 using RNG = std::mt19937_64;
-#elifdef VIENNACORE_RNG_MT19937_32
+#elif defined(VIENNACORE_RNG_MT19937_32)
 using RNG = std::mt19937;
-#elifdef VIENNACORE_RNG_RANLUX48
+#elif defined(VIENNACORE_RNG_RANLUX48)
 using RNG = std::ranlux48;
-#elifdef VIENNACORE_RNG_RANLUX24
+#elif defined(VIENNACORE_RNG_RANLUX24)
 using RNG = std::ranlux24;
-#elifdef VIENNACORE_RNG_MINSTD
+#elif defined(VIENNACORE_RNG_MINSTD)
 using RNG = std::minstd_rand;
-#elifdef VIENNACORE_RNG_PHILOX
+#elif defined(VIENNACORE_RNG_PHILOX)
 using RNG = viennacore::PhiloxRNG;
 #else
 using RNG = viennacore::PhiloxRNG;
 #endif
 
-template <size_t N, class ValueType = uint32_t> class RandonNumbers {
+template <size_t N, class ValueType = uint32_t> class RandomNumbers {
   std::array<ValueType, N> numbers_;
 
 public:
-  explicit RandonNumbers(const std::array<ValueType, N> &numbers)
+  explicit RandomNumbers(const std::array<ValueType, N> &numbers)
       : numbers_(numbers) {}
 
   template <typename T, std::enable_if_t<std::is_floating_point_v<T>,
