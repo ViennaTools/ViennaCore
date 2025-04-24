@@ -44,6 +44,16 @@ else()
   set(bit_dest "")
 endif()
 
+if("${OptiX_INSTALL_DIR}" STREQUAL "")
+  if(WIN32)
+    # Try finding it inside the default installation directory under Windows first.
+    set(OptiX_INSTALL_DIR "C:/ProgramData/NVIDIA Corporation/OptiX SDK 8.0.0")
+  else()
+    # Adjust this if the OptiX SDK 8.0.0 installation is in a different location.
+    set(OptiX_INSTALL_DIR "~/NVIDIA-OptiX-SDK-8.0.0-linux64")
+  endif()
+endif()
+
 # Include
 find_path(
   OptiX_INCLUDE
