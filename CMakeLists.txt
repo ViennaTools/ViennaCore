@@ -98,8 +98,7 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "ViennaCore CUDA libraries" FORCE)
 
     target_compile_definitions(
-      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU
-                                VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
+      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
   else()
     message(WARNING "CUDA Toolkit or OptiX not found. Skipping GPU build.")
     set(VIENNACORE_USE_GPU OFF)
