@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.4.1)
+  VERSION 1.4.2)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
+option(VIENNACORE_USE_GPU "Enable CUDA functionalities" ON)
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -98,8 +98,7 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "ViennaCore CUDA libraries" FORCE)
 
     target_compile_definitions(
-      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU
-                                VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
+      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
   else()
     message(WARNING "CUDA Toolkit or OptiX not found. Skipping GPU build.")
     set(VIENNACORE_USE_GPU OFF)

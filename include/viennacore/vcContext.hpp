@@ -38,6 +38,7 @@ struct Context {
               const int deviceID = 0);
   CUmodule getModule(const std::string &moduleName);
   void addModule(const std::string &moduleName);
+  std::string getModulePath() const { return modulePath.string(); }
   void destroy() {
     if (deviceID == -1)
       return;
