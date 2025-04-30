@@ -4,10 +4,11 @@
 
 int main() {
   using namespace viennacore;
-  Logger::setLogLevel(LogLevel::DEBUG);
-
   Context context;
-
   context.create();
+  auto deviceName = context.getDeviceName();
+  auto modulePath = context.getModulePath();
+  std::cout << "Device name: " << deviceName << std::endl;
+  std::cout << "Module path: " << modulePath << std::endl;
   context.destroy();
 }

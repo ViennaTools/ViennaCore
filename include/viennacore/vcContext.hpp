@@ -39,6 +39,7 @@ struct Context {
   CUmodule getModule(const std::string &moduleName);
   void addModule(const std::string &moduleName);
   std::string getModulePath() const { return modulePath.string(); }
+  std::string getDeviceName() const { return deviceProps.name; }
   void destroy() {
     if (deviceID == -1)
       return;
