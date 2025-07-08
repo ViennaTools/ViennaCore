@@ -32,7 +32,8 @@ if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
   if(WIN32)
     message(SEND_ERROR "Make sure when selecting the generator, you select one with Win64 or x64.")
   endif()
-  message(FATAL_ERROR "OptiX only supports builds configured for 64 bits.")
+  message(STATUS "OptiX only supports builds configured for 64 bits.")
+  return()
 endif()
 
 # search path based on the bit-ness of the build.  (i.e. 64: bin64, lib64; 32:
