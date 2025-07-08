@@ -10,7 +10,13 @@ ViennaCore implements common functionality found in all ViennaTools libraries.
 
 ## Contributing
 
-If you want to contribute to ViennaPS, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html). Before creating a pull request, make sure ALL files have been formatted by clang-format, which can be done using the format-project.sh script in the root directory.
+If you want to contribute to ViennaCore, make sure to follow the [LLVM Coding guidelines](https://llvm.org/docs/CodingStandards.html).
+
+Make sure to format all files before creating a pull request:
+```bash
+cmake -B build
+cmake --build build --target format
+```
 
 ## Authors
 

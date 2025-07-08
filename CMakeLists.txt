@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.4.3)
+  VERSION 1.4.4)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -97,10 +97,9 @@ if(VIENNACORE_USE_GPU)
         ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY}
         CACHE STRING "ViennaCore CUDA libraries" FORCE)
 
-    target_compile_definitions(
-      ${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
   else()
-    if (VIENNACORE_FORCE_GPU)
+    if(VIENNACORE_FORCE_GPU)
       message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
     else()
       message(STATUS "[ViennaCore] CUDA Toolkit or OptiX not found. Skipping GPU build.")
