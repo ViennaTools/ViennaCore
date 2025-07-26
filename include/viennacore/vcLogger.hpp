@@ -253,6 +253,7 @@ public:
       out.flush();
     }
     if (error) {
+      error = false; // reset error state
       throw std::runtime_error("ViennaPS Fatal Error");
     }
   }
