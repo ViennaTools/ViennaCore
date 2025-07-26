@@ -46,6 +46,7 @@ class Logger {
   static bool logToFile;
 
   bool error = false;
+  std::string color = TM_DEFAULT;
   const unsigned tabWidth = 4;
   static LogLevel logLevel;
 
@@ -68,6 +69,8 @@ public:
     static Logger instance;
     return instance;
   }
+
+  bool hasError() const { return error; }
 
   // Enable logging to a file. Creates or overwrites the file.
   static bool setLogFile(const std::string &filename) {
@@ -112,7 +115,10 @@ public:
     if (getLogLevel() < 5)
       return *this;
 #pragma omp critical
-    { message += std::string(tabWidth, ' ') + TM_GREEN + "DEBUG: " + s + "\n"; }
+    {
+      message += "DEBUG: " + s + "\n";
+      color = TM_GREEN; // Set color for debug messages
+    }
     return *this;
   }
 
@@ -123,8 +129,7 @@ public:
       return *this;
 #pragma omp critical
     {
-      message += std::string(tabWidth, ' ') + s +
-                 " took: " + std::to_string(timer.currentDuration * 1e-9) +
+      message += s + " took: " + std::to_string(timer.currentDuration * 1e-9) +
                  " s \n";
     }
     return *this;
@@ -134,10 +139,7 @@ public:
     if (getLogLevel() < 3)
       return *this;
 #pragma omp critical
-    {
-      message += std::string(tabWidth, ' ') + s + ": " +
-                 std::to_string(timeInSeconds) + " s \n";
-    }
+    { message += s + ": " + std::to_string(timeInSeconds) + " s \n"; }
     return *this;
   }
 
@@ -147,8 +149,7 @@ public:
       return *this;
 #pragma omp critical
     {
-      message += std::string(tabWidth, ' ') + s + ": " +
-                 std::to_string(timeInSeconds) + " s\n" +
+      message += s + ": " + std::to_string(timeInSeconds) + " s\n" +
                  std::string(tabWidth, ' ') + "Percent of total time: " +
                  std::to_string(timeInSeconds / totalTimeInSeconds * 100) +
                  "\n";
@@ -161,7 +162,7 @@ public:
     if (getLogLevel() < 2)
       return *this;
 #pragma omp critical
-    { message += std::string(tabWidth, ' ') + s + "\n"; }
+    { message += s + "\n"; }
     return *this;
   }
 
@@ -171,26 +172,19 @@ public:
       return *this;
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + TM_YELLOW +
-                 "WARNING: " + s + "\n";
+      message += "WARNING: " + s + "\n";
+      color = TM_YELLOW; // Set color for warning messages
     }
     return *this;
   }
 
   // Add error message if log level is high enough.
-  Logger &addError(const std::string &s, const bool shouldAbort = false) {
+  Logger &addError(const std::string &s, const bool shouldAbort = true) {
 #pragma omp critical
     {
-      message +=
-          "\n" + std::string(tabWidth, ' ') + TM_RED + "ERROR: " + s + "\n";
-
-#ifdef VIENNATOOLS_BUILD_PYTHON
-      // In Python builds, we don't abort immediately to keep the kernel running
-      // for non-critical errors.
+      message += "ERROR: " + s + "\n";
       error = shouldAbort;
-#else
-      error = true; // always abort once error message should be printed
-#endif
+      color = TM_RED; // Set color for error messages
     }
     return *this;
   }
@@ -206,10 +200,10 @@ public:
   Logger &addModuleError(std::string moduleName, CUresult err) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
-                 "ERROR in CUDA module " + moduleName + ": " +
+      message += "ERROR in CUDA module " + moduleName + ": " +
                  getErrorString(err) + "\n";
-      error = true; // always abort once error message should be printed
+      error = true;   // always abort once error message should be printed
+      color = TM_RED; // Set color for error messages
     }
     return *this;
   }
@@ -217,10 +211,10 @@ public:
   Logger &addFunctionError(const std::string &kernelName, CUresult err) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
-                 "ERROR in CUDA kernel " + kernelName + ": " +
+      message += "ERROR in CUDA kernel " + kernelName + ": " +
                  getErrorString(err) + "\n";
-      error = true; // always abort once error message should be printed
+      error = true;   // always abort once error message should be printed
+      color = TM_RED; // Set color for error messages
     }
     return *this;
   }
@@ -228,10 +222,10 @@ public:
   Logger &addLaunchError(const std::string &kernelName, CUresult err) {
 #pragma omp critical
     {
-      message += "\n" + std::string(tabWidth, ' ') + TM_RED +
-                 "ERROR in CUDA kernel launch (" + kernelName +
+      message += "ERROR in CUDA kernel launch (" + kernelName +
                  "): " + getErrorString(err) + "\n";
-      error = true; // always abort once error message should be printed
+      error = true;   // always abort once error message should be printed
+      color = TM_RED; // Set color for error messages
     }
     return *this;
   }
@@ -241,44 +235,21 @@ public:
   void print(std::ostream &out = std::cout) {
 #pragma omp critical
     {
+      out << std::string(tabWidth, ' ') << color;
       out << message;
       out << TM_RESET;
 
       // Also write to file if file logging is enabled
       if (logToFile && logFile.is_open()) {
-        // Remove color codes for file output
-        std::string fileMessage = message;
-        // Simple color code removal - replace common codes with empty string
-        size_t pos = 0;
-        while ((pos = fileMessage.find("\033[", pos)) != std::string::npos) {
-          size_t endPos = fileMessage.find("m", pos);
-          if (endPos != std::string::npos) {
-            fileMessage.erase(pos, endPos - pos + 1);
-          } else {
-            break;
-          }
-        }
-        logFile << fileMessage;
+        logFile << message;
         logFile.flush();
       }
 
       message.clear();
       out.flush();
-
-      if (error) {
-        // Ensure all output is flushed before aborting
-        std::cout.flush();
-        std::cerr.flush();
-        if (logToFile && logFile.is_open()) {
-          logFile.flush();
-        }
-#ifdef VIENNATOOLS_BUILD_PYTHON
-        throw std::runtime_error("Error: " + message);
-#else
-        // In C++ builds, we abort immediately to stop execution.
-        abort();
-#endif
-      }
+    }
+    if (error) {
+      throw std::runtime_error("ViennaPS Fatal Error");
     }
   }
 };
