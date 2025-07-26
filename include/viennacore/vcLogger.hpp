@@ -182,7 +182,7 @@ public:
   Logger &addError(const std::string &s, const bool shouldAbort = true) {
 #pragma omp critical
     {
-      message += "ERROR: " + s + "\n";
+      message += (shouldAbort ? "" : "ERROR: ") + s + (shouldAbort ? "" : "\n");
       error = shouldAbort;
       color = TM_RED; // Set color for error messages
     }
@@ -236,12 +236,18 @@ public:
     if (message.empty())
       return; // nothing to print
 
+    std::string errorMsg;
+
 #pragma omp critical
     {
-      out << std::string(tabWidth, ' ') << color;
-      out << message;
-      out << TM_RESET;
-      color.clear(); // Reset color for next messages
+      if (!error) {
+        out << std::string(tabWidth, ' ') << color;
+        out << message;
+        out << TM_RESET;
+        color.clear(); // Reset color for next messages
+      } else {
+        errorMsg = message;
+      }
 
       // Also write to file if file logging is enabled
       if (logToFile && logFile.is_open()) {
@@ -252,9 +258,10 @@ public:
       message.clear();
       out.flush();
     }
+
     if (error) {
       error = false; // reset error state
-      throw std::runtime_error("ViennaPS Fatal Error");
+      throw std::runtime_error(errorMsg);
     }
   }
 };
