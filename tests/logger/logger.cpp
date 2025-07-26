@@ -38,8 +38,7 @@ int main() {
   logger.addWarning("Warning message");
   logger.print(ss);
 
-  VC_TEST_ASSERT(ss.str() ==
-                 "\n    \033[1;33mWARNING: Warning message\n\033[0m");
+  VC_TEST_ASSERT(ss.str() == "    \033[1;33mWARNING: Warning message\n\033[0m");
   ss.str("");
 
   Logger::setLogFile("test_log.txt");

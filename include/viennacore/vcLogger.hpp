@@ -46,7 +46,7 @@ class Logger {
   static bool logToFile;
 
   bool error = false;
-  std::string color = TM_DEFAULT;
+  std::string color = "";
   const unsigned tabWidth = 4;
   static LogLevel logLevel;
 
@@ -233,11 +233,15 @@ public:
 
   // Print message to std::cout if log level is high enough.
   void print(std::ostream &out = std::cout) {
+    if (message.empty())
+      return; // nothing to print
+
 #pragma omp critical
     {
       out << std::string(tabWidth, ' ') << color;
       out << message;
       out << TM_RESET;
+      color.clear(); // Reset color for next messages
 
       // Also write to file if file logging is enabled
       if (logToFile && logFile.is_open()) {
