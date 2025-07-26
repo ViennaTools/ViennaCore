@@ -2,6 +2,7 @@
 
 #include "vcTimer.hpp"
 
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -41,6 +42,8 @@ enum class LogLevel : unsigned {
 /// can also be used to print timing information.
 class Logger {
   std::string message;
+  static std::ofstream logFile;
+  static bool logToFile;
 
   bool error = false;
   const unsigned tabWidth = 4;
@@ -65,6 +68,44 @@ public:
     static Logger instance;
     return instance;
   }
+
+  // Enable logging to a file. Creates or overwrites the file.
+  static bool setLogFile(const std::string &filename) {
+    if (logFile.is_open()) {
+      logFile.close();
+    }
+    logFile.open(filename, std::ios::out | std::ios::trunc);
+    logToFile = logFile.is_open();
+    if (!logToFile) {
+      getInstance().addError("Failed to open log file: " + filename, false);
+    }
+    return logToFile;
+  }
+
+  // Append to existing log file or create new one
+  static bool appendToLogFile(const std::string &filename) {
+    if (logFile.is_open()) {
+      logFile.close();
+    }
+    logFile.open(filename, std::ios::out | std::ios::app);
+    logToFile = logFile.is_open();
+    if (!logToFile) {
+      getInstance().addError(
+          "Failed to open log file for appending: " + filename, false);
+    }
+    return logToFile;
+  }
+
+  // Disable file logging and close the log file
+  static void closeLogFile() {
+    if (logFile.is_open()) {
+      logFile.close();
+    }
+    logToFile = false;
+  }
+
+  // Check if file logging is enabled
+  static bool isLoggingToFile() { return logToFile; }
 
   // Add debug message if log level is high enough.
   Logger &addDebug(const std::string &s) {
@@ -137,17 +178,20 @@ public:
   }
 
   // Add error message if log level is high enough.
-  Logger &addError(const std::string &s, const bool shouldAbort = true) {
+  Logger &addError(const std::string &s, const bool shouldAbort = false) {
 #pragma omp critical
     {
       message +=
           "\n" + std::string(tabWidth, ' ') + TM_RED + "ERROR: " + s + "\n";
-      // always abort once error message should be printed
-      error = true;
+
+#ifdef VIENNATOOLS_BUILD_PYTHON
+      // In Python builds, we don't abort immediately to keep the kernel running
+      // for non-critical errors.
+      error = shouldAbort;
+#else
+      error = true; // always abort once error message should be printed
+#endif
     }
-    // abort now if asked
-    if (shouldAbort)
-      print();
     return *this;
   }
 
@@ -159,51 +203,36 @@ public:
     return errorString;
   }
 
-  Logger &addModuleError(std::string moduleName, CUresult err,
-                         bool shouldAbort = true) {
+  Logger &addModuleError(std::string moduleName, CUresult err) {
 #pragma omp critical
     {
       message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA module " + moduleName + ": " +
                  getErrorString(err) + "\n";
-      // always abort once error message should be printed
-      error = true;
+      error = true; // always abort once error message should be printed
     }
-    // abort now if asked
-    if (shouldAbort)
-      print();
     return *this;
   }
 
-  Logger &addFunctionError(const std::string &kernelName, CUresult err,
-                           const bool shouldAbort = true) {
+  Logger &addFunctionError(const std::string &kernelName, CUresult err) {
 #pragma omp critical
     {
       message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA kernel " + kernelName + ": " +
                  getErrorString(err) + "\n";
-      // always abort once error message should be printed
-      error = true;
+      error = true; // always abort once error message should be printed
     }
-    // abort now if asked
-    if (shouldAbort)
-      print();
     return *this;
   }
 
-  Logger &addLaunchError(const std::string &kernelName, CUresult err,
-                         const bool shouldAbort = true) {
+  Logger &addLaunchError(const std::string &kernelName, CUresult err) {
 #pragma omp critical
     {
       message += "\n" + std::string(tabWidth, ' ') + TM_RED +
                  "ERROR in CUDA kernel launch (" + kernelName +
                  "): " + getErrorString(err) + "\n";
-      // always abort once error message should be printed
-      error = true;
+      error = true; // always abort once error message should be printed
     }
-    // abort now if asked
-    if (shouldAbort)
-      print();
     return *this;
   }
 #endif
@@ -214,14 +243,48 @@ public:
     {
       out << message;
       out << TM_RESET;
+
+      // Also write to file if file logging is enabled
+      if (logToFile && logFile.is_open()) {
+        // Remove color codes for file output
+        std::string fileMessage = message;
+        // Simple color code removal - replace common codes with empty string
+        size_t pos = 0;
+        while ((pos = fileMessage.find("\033[", pos)) != std::string::npos) {
+          size_t endPos = fileMessage.find("m", pos);
+          if (endPos != std::string::npos) {
+            fileMessage.erase(pos, endPos - pos + 1);
+          } else {
+            break;
+          }
+        }
+        logFile << fileMessage;
+        logFile.flush();
+      }
+
       message.clear();
       out.flush();
-      if (error)
+
+      if (error) {
+        // Ensure all output is flushed before aborting
+        std::cout.flush();
+        std::cerr.flush();
+        if (logToFile && logFile.is_open()) {
+          logFile.flush();
+        }
+#ifdef VIENNATOOLS_BUILD_PYTHON
+        throw std::runtime_error("Error: " + message);
+#else
+        // In C++ builds, we abort immediately to stop execution.
         abort();
+#endif
+      }
     }
   }
 };
 
-// initialize static member of logger
+// initialize static members of logger
 inline LogLevel Logger::logLevel = LogLevel::INFO;
+inline std::ofstream Logger::logFile;
+inline bool Logger::logToFile = false;
 } // namespace viennacore

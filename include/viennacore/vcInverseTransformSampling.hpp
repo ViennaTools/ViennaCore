@@ -3,7 +3,6 @@
 #include "vcSamplingMethod.hpp"
 #include "vcVectorType.hpp"
 
-#include <cassert>
 #include <functional>
 #include <vector>
 
