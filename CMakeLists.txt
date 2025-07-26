@@ -9,7 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-option(VIENNACORE_USE_GPU "Enable CUDA functionalities" ON)
+option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -99,12 +99,7 @@ if(VIENNACORE_USE_GPU)
 
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
   else()
-    if(VIENNACORE_FORCE_GPU)
-      message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
-    else()
-      message(STATUS "[ViennaCore] CUDA Toolkit or OptiX not found. Skipping GPU build.")
-      set(VIENNACORE_USE_GPU OFF)
-    endif()
+    message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
   endif()
 endif()
 
