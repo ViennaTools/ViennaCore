@@ -47,7 +47,7 @@ class Logger {
 
   bool error = false;
   std::string color = "";
-  const unsigned tabWidth = 4;
+  const std::string tab = std::string(4, ' ');
   static LogLevel logLevel;
 
   Logger() {}
@@ -149,8 +149,8 @@ public:
       return *this;
 #pragma omp critical
     {
-      message += s + ": " + std::to_string(timeInSeconds) + " s\n" +
-                 std::string(tabWidth, ' ') + "Percent of total time: " +
+      message += s + ": " + std::to_string(timeInSeconds) + " s\n" + tab +
+                 "Percent of total time: " +
                  std::to_string(timeInSeconds / totalTimeInSeconds * 100) +
                  "\n";
     }
@@ -241,9 +241,7 @@ public:
 #pragma omp critical
     {
       if (!error) {
-        out << std::string(tabWidth, ' ') << color;
-        out << message;
-        out << TM_RESET;
+        out << tab << color << message << TM_RESET;
         color.clear(); // Reset color for next messages
       } else {
         errorMsg = message;
