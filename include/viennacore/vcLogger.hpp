@@ -23,15 +23,15 @@ namespace viennacore {
 // 0 errors
 // 1 + warnings
 // 2 + info
-// 3 + timings
-// 4 + intermediate output (meshes)
+// 3 + intermediate output (points)
+// 4 + timings
 // 5 + debug
 enum class LogLevel : unsigned {
   ERROR = 0,
   WARNING = 1,
   INFO = 2,
-  TIMING = 3,
-  INTERMEDIATE = 4,
+  INTERMEDIATE = 3,
+  TIMING = 4,
   DEBUG = 5
 };
 
@@ -125,7 +125,7 @@ public:
   // Add timing message if log level is high enough.
   template <class Clock>
   Logger &addTiming(const std::string &s, Timer<Clock> &timer) {
-    if (getLogLevel() < 3)
+    if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
     {
@@ -136,7 +136,7 @@ public:
   }
 
   Logger &addTiming(const std::string &s, double timeInSeconds) {
-    if (getLogLevel() < 3)
+    if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
     { message += s + ": " + std::to_string(timeInSeconds) + " s \n"; }
@@ -145,7 +145,7 @@ public:
 
   Logger &addTiming(const std::string &s, double timeInSeconds,
                     double totalTimeInSeconds) {
-    if (getLogLevel() < 3)
+    if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
     {
@@ -197,7 +197,7 @@ public:
     return errorString;
   }
 
-  Logger &addModuleError(std::string moduleName, CUresult err) {
+  Logger &addModuleError(const std::string &moduleName, CUresult err) {
 #pragma omp critical
     {
       message += "ERROR in CUDA module " + moduleName + ": " +
