@@ -139,7 +139,9 @@ public:
     if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
-    { message += s + ": " + std::to_string(timeInSeconds) + " s \n"; }
+    {
+      message += s + ": " + std::to_string(timeInSeconds) + " s \n";
+    }
     return *this;
   }
 
@@ -162,7 +164,9 @@ public:
     if (getLogLevel() < 2)
       return *this;
 #pragma omp critical
-    { message += s + "\n"; }
+    {
+      message += s + "\n";
+    }
     return *this;
   }
 
@@ -265,7 +269,12 @@ public:
 };
 
 // initialize static members of logger
+
+#ifndef NDEBUG
+inline LogLevel Logger::logLevel = LogLevel::DEBUG;
+#else
 inline LogLevel Logger::logLevel = LogLevel::INFO;
+#endif
 inline std::ofstream Logger::logFile;
 inline bool Logger::logToFile = false;
 } // namespace viennacore
