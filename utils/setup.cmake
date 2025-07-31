@@ -1,6 +1,6 @@
 function(viennacore_setup SOURCE_TARGET DEST_TARGET OUTPUT)
   if(NOT TARGET ${SOURCE_TARGET})
-    message(WARNING "Could not find target ${SOURCE_TARGET}")
+    message(VERBOSE "Could not find target ${SOURCE_TARGET}")
     return()
   endif()
 
