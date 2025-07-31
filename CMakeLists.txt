@@ -9,7 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-option(VIENNACORE_USE_GPU "Enable CUDA functionalities" OFF)
+option(VIENNACORE_USE_GPU "Enable GPU support" OFF)
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -64,26 +64,15 @@ if(VIENNACORE_USE_GPU)
   # Add ViennaCore cmake paths to our CMake code to the module path, so they can be found automatically by
   # CMake (i.e. FindCUDA and FindOptiX).
   set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-  find_package(CUDA 5.0 QUIET)
 
-  # Find OptiX
-  if("${is_cached}" STREQUAL "" AND DEFINED OptiX_INSTALL_DIR)
-    # Required for windows to convert backslashes to forward slashes
-    file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
-    set(OptiX_INSTALL_DIR
-        "${OptiX_INSTALL_DIR}"
-        CACHE PATH "Path to OptiX installation" FORCE)
-  else()
-    set(OptiX_INSTALL_DIR
-        $ENV{OptiX_INSTALL_DIR}
-        CACHE PATH "Path to OptiX installation.")
-  endif()
+  # Find the CUDA Toolkit
+  find_package(CUDA 12.0 QUIET)
 
   # Search for the OptiX include files.
-  find_package(OptiX QUIET)
+  find_package(OptiX 8.0 QUIET)
 
   # Requires both CUDA and OptiX
-  if(CUDA_FOUND AND OptiX_INCLUDE)
+  if(CUDA_FOUND AND OptiX_FOUND)
     message(STATUS "[ViennaCore] Enabling GPU support")
     include("cmake/setCudaFlags.cmake")
 
