@@ -27,7 +27,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-if (OptiX_FOUND)
+if(OptiX_FOUND)
   # Already found, so just return.
   return()
 endif()
@@ -51,7 +51,7 @@ else()
 endif()
 
 if(NOT OptiX_FIND_VERSION)
-    set(OptiX_FIND_VERSION "*")
+  set(OptiX_FIND_VERSION "*")
 endif()
 
 if("${is_cached}" STREQUAL "" AND DEFINED OptiX_INSTALL_DIR)
@@ -68,25 +68,30 @@ endif()
 
 if("${OptiX_INSTALL_DIR}" STREQUAL "")
   if(CMAKE_HOST_WIN32)
-      # This is the default OptiX SDK install location on Windows.
-      file(GLOB OptiX_INSTALL_DIR "$ENV{ProgramData}/NVIDIA Corporation/OptiX SDK ${OptiX_FIND_VERSION}*")
+    # This is the default OptiX SDK install location on Windows.
+    file(GLOB OptiX_INSTALL_DIR
+         "$ENV{ProgramData}/NVIDIA Corporation/OptiX SDK ${OptiX_FIND_VERSION}*")
   else()
-      # On linux, there is no default install location for the SDK, but it does have a default subdir name.
-      foreach(dir "/opt" "/usr/local" "$ENV{HOME}" "$ENV{HOME}/Downloads")
-          file(GLOB OptiX_INSTALL_DIR "${dir}/NVIDIA-OptiX-SDK-${OptiX_FIND_VERSION}*")
-          if(OptiX_INSTALL_DIR)
-              break()
-          endif()
-      endforeach()
+    # On linux, there is no default install location for the SDK, but it does have a default subdir name.
+    foreach(dir "/opt" "/usr/local" "$ENV{HOME}" "$ENV{HOME}/Downloads")
+      file(GLOB OptiX_INSTALL_DIR "${dir}/NVIDIA-OptiX-SDK-${OptiX_FIND_VERSION}*")
+      if(OptiX_INSTALL_DIR)
+        break()
+      endif()
+    endforeach()
   endif()
 endif()
 
 # Include
-find_path(OptiX_ROOT_DIR NAMES include/optix.h PATHS ${OptiX_INSTALL_DIR} ${OPTIX_SDK_DIR} REQUIRED)
+find_path(
+  OptiX_ROOT_DIR
+  NAMES include/optix.h
+  PATHS ${OptiX_INSTALL_DIR} REQUIRED)
 file(READ "${OptiX_ROOT_DIR}/include/optix.h" header)
 
 # Extract version parts
-string(REGEX REPLACE "^.*OPTIX_VERSION ([0-9]+)([0-9][0-9])([0-9][0-9])[^0-9].*$" "\\1;\\2;\\3" OPTIX_VERSION_LIST "${header}")
+string(REGEX REPLACE "^.*OPTIX_VERSION ([0-9]+)([0-9][0-9])([0-9][0-9])[^0-9].*$" "\\1;\\2;\\3"
+                     OPTIX_VERSION_LIST "${header}")
 
 # Split into list
 list(GET OPTIX_VERSION_LIST 0 OPTIX_VERSION_MAJOR)
@@ -102,12 +107,16 @@ set(OPTIX_VERSION "${OPTIX_VERSION_MAJOR}.${OPTIX_VERSION_MINOR}.${OPTIX_VERSION
 
 # Use normalized version
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OptiX
-    FOUND_VAR OptiX_FOUND
-    VERSION_VAR OPTIX_VERSION
-    REQUIRED_VARS OptiX_ROOT_DIR
-    REASON_FAILURE_MESSAGE "OptiX installation not found. Please use CMAKE_PREFIX_PATH or OptiX_INSTALL_DIR to locate 'include/optix.h'."
+find_package_handle_standard_args(
+  OptiX
+  FOUND_VAR OptiX_FOUND
+  VERSION_VAR OPTIX_VERSION
+  REQUIRED_VARS
+    OptiX_ROOT_DIR
+    REASON_FAILURE_MESSAGE
+    "OptiX installation not found. Please use CMAKE_PREFIX_PATH or OptiX_INSTALL_DIR to locate 'include/optix.h'."
 )
 
-set(OptiX_INCLUDE_DIR ${OptiX_ROOT_DIR}/include 
+set(OptiX_INCLUDE_DIR
+    ${OptiX_ROOT_DIR}/include
     CACHE PATH "Path to OptiX include directory.")

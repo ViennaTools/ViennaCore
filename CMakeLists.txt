@@ -9,7 +9,10 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
+
 option(VIENNACORE_USE_GPU "Enable GPU support" OFF)
+option(VIENNACORE_FETCH_OPTIX "Fetch OptiX from GitHub" OFF)
+
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -68,11 +71,24 @@ if(VIENNACORE_USE_GPU)
   # Find the CUDA Toolkit
   find_package(CUDA 12.0 QUIET)
 
+  if(VIENNACORE_FETCH_OPTIX)
+    CPMAddPackage(
+      NAME OptiX
+      VERSION 8.0.0
+      GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
+    set(OptiX_INSTALL_DIR
+        ${CPM_PACKAGE_OptiX_SOURCE_DIR}
+        CACHE PATH "Path to OptiX installation")
+    set(OptiX_INCLUDE_DIR
+        ${OptiX_INSTALL_DIR}/include
+        CACHE PATH "Path to OptiX include directory.")
+  endif()
+
   # Search for the OptiX include files.
   find_package(OptiX 8.0 QUIET)
 
   # Requires both CUDA and OptiX
-  if(CUDA_FOUND AND OptiX_FOUND)
+  if(CUDA_FOUND AND OptiX_INCLUDE_DIR)
     message(STATUS "[ViennaCore] Enabling GPU support")
     include("cmake/setCudaFlags.cmake")
 
