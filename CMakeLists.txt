@@ -2,14 +2,17 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.4.4)
+  VERSION 1.5.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-option(VIENNACORE_USE_GPU "Enable CUDA functionalities" ON)
+
+option(VIENNACORE_USE_GPU "Enable GPU support" OFF)
+option(VIENNACORE_FETCH_OPTIX "Fetch OptiX from GitHub" OFF)
+
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
@@ -64,26 +67,28 @@ if(VIENNACORE_USE_GPU)
   # Add ViennaCore cmake paths to our CMake code to the module path, so they can be found automatically by
   # CMake (i.e. FindCUDA and FindOptiX).
   set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-  find_package(CUDA 5.0 QUIET)
 
-  # Find OptiX
-  if("${is_cached}" STREQUAL "" AND DEFINED OptiX_INSTALL_DIR)
-    # Required for windows to convert backslashes to forward slashes
-    file(TO_CMAKE_PATH "${OptiX_INSTALL_DIR}" OptiX_INSTALL_DIR)
+  # Find the CUDA Toolkit
+  find_package(CUDA 12.0 QUIET)
+
+  if(VIENNACORE_FETCH_OPTIX)
+    CPMAddPackage(
+      NAME OptiX
+      VERSION 8.0.0
+      GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
     set(OptiX_INSTALL_DIR
-        "${OptiX_INSTALL_DIR}"
-        CACHE PATH "Path to OptiX installation" FORCE)
+        ${CPM_PACKAGE_OptiX_SOURCE_DIR}
+        CACHE PATH "Path to OptiX installation")
+    set(OptiX_INCLUDE_DIR
+        ${OptiX_INSTALL_DIR}/include
+        CACHE PATH "Path to OptiX include directory.")
   else()
-    set(OptiX_INSTALL_DIR
-        $ENV{OptiX_INSTALL_DIR}
-        CACHE PATH "Path to OptiX installation.")
+    # Search for the OptiX include files.
+    find_package(OptiX 8.0 QUIET)
   endif()
 
-  # Search for the OptiX include files.
-  find_package(OptiX QUIET)
-
   # Requires both CUDA and OptiX
-  if(CUDA_FOUND AND OptiX_INCLUDE)
+  if(CUDA_FOUND AND OptiX_INCLUDE_DIR)
     message(STATUS "[ViennaCore] Enabling GPU support")
     include("cmake/setCudaFlags.cmake")
 
@@ -99,12 +104,7 @@ if(VIENNACORE_USE_GPU)
 
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
   else()
-    if(VIENNACORE_FORCE_GPU)
-      message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
-    else()
-      message(STATUS "[ViennaCore] CUDA Toolkit or OptiX not found. Skipping GPU build.")
-      set(VIENNACORE_USE_GPU OFF)
-    endif()
+    message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
   endif()
 endif()
 

@@ -11,7 +11,7 @@ int main() {
   std::stringstream ss;
 
   logger.setLogLevel(LogLevel::TIMING);
-  VC_TEST_ASSERT(logger.getLogLevel() == 3);
+  VC_TEST_ASSERT(logger.getLogLevel() == 4);
 
   logger.setLogLevel(LogLevel::DEBUG);
   logger.addDebug("Debug message");
@@ -38,7 +38,11 @@ int main() {
   logger.addWarning("Warning message");
   logger.print(ss);
 
-  VC_TEST_ASSERT(ss.str() ==
-                 "\n    \033[1;33mWARNING: Warning message\n\033[0m");
+  VC_TEST_ASSERT(ss.str() == "    \033[1;33mWARNING: Warning message\n\033[0m");
   ss.str("");
+
+  Logger::setLogFile("test_log.txt");
+  VC_TEST_ASSERT(Logger::isLoggingToFile() == true);
+  logger.addError("Error message", false);
+  logger.print(std::cout);
 }
