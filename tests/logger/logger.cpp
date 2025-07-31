@@ -11,7 +11,7 @@ int main() {
   std::stringstream ss;
 
   logger.setLogLevel(LogLevel::TIMING);
-  VC_TEST_ASSERT(logger.getLogLevel() == 3);
+  VC_TEST_ASSERT(logger.getLogLevel() == 4);
 
   logger.setLogLevel(LogLevel::DEBUG);
   logger.addDebug("Debug message");

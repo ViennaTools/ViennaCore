@@ -5,6 +5,7 @@
 #include "vcInverseTransformSampling.hpp"
 #include "vcLogger.hpp"
 
+#include <cassert>
 #include <functional>
 #include <memory>
 #include <queue>
