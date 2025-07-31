@@ -82,10 +82,10 @@ if(VIENNACORE_USE_GPU)
     set(OptiX_INCLUDE_DIR
         ${OptiX_INSTALL_DIR}/include
         CACHE PATH "Path to OptiX include directory.")
+  else()
+    # Search for the OptiX include files.
+    find_package(OptiX 8.0 QUIET)
   endif()
-
-  # Search for the OptiX include files.
-  find_package(OptiX 8.0 QUIET)
 
   # Requires both CUDA and OptiX
   if(CUDA_FOUND AND OptiX_INCLUDE_DIR)
