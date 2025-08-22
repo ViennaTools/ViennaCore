@@ -85,34 +85,32 @@ _define_operator(-);
 
 template <typename NumericType, size_t D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
-Sum(const VectorType<NumericType, D> &pVecA,
-    const VectorType<NumericType, D> &pVecB,
-    const VectorType<NumericType, D> &pVecC) {
+Sum(const VectorType<NumericType, D> &a, const VectorType<NumericType, D> &b,
+    const VectorType<NumericType, D> &c) {
   VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
-    rr[i] = pVecA[i] + pVecB[i] + pVecC[i];
+    rr[i] = a[i] + b[i] + c[i];
   }
   return rr;
 }
 
 template <typename NumericType, size_t D>
-[[nodiscard]] __both__ NumericType
-DotProduct(const VectorType<NumericType, D> &pVecA,
-           const VectorType<NumericType, D> &pVecB) {
+[[nodiscard]] __both__ NumericType DotProduct(
+    const VectorType<NumericType, D> &a, const VectorType<NumericType, D> &b) {
   NumericType dot = 0;
   for (size_t i = 0; i < D; ++i) {
-    dot += pVecA[i] * pVecB[i];
+    dot += a[i] * b[i];
   }
   return dot;
 }
 
 template <typename NumericType>
 [[nodiscard]] __both__ Vec3D<NumericType>
-CrossProduct(const Vec3D<NumericType> &pVecA, const Vec3D<NumericType> &pVecB) {
+CrossProduct(const Vec3D<NumericType> &a, const Vec3D<NumericType> &b) {
   Vec3D<NumericType> rr;
-  rr[0] = pVecA[1] * pVecB[2] - pVecA[2] * pVecB[1];
-  rr[1] = pVecA[2] * pVecB[0] - pVecA[0] * pVecB[2];
-  rr[2] = pVecA[0] * pVecB[1] - pVecA[1] * pVecB[0];
+  rr[0] = a[1] * b[2] - a[2] * b[1];
+  rr[1] = a[2] * b[0] - a[0] * b[2];
+  rr[2] = a[0] * b[1] - a[1] * b[0];
   return rr;
 }
 
@@ -185,9 +183,9 @@ Normalize(const VectorType<NumericType, D> &vec) {
 template <typename NumericType, size_t D>
 __both__ void ScaleToLength(VectorType<NumericType, D> &vec,
                             const NumericType length) {
-  const auto vecLength = Norm(vec);
+  const auto scale = length / Norm(vec);
   for (size_t i = 0; i < D; i++)
-    vec[i] *= length / vecLength;
+    vec[i] *= scale;
 }
 
 template <typename NumericType, size_t D>
@@ -213,9 +211,9 @@ ScaleAdd(const VectorType<NumericType, D> &mult,
 
 template <typename NumericType, size_t D>
 __both__ [[nodiscard]] NumericType
-Distance(const VectorType<NumericType, D> &pVecA,
-         const VectorType<NumericType, D> &pVecB) {
-  return Norm(pVecA - pVecB);
+Distance(const VectorType<NumericType, D> &a,
+         const VectorType<NumericType, D> &b) {
+  return Norm(a - b);
 }
 
 template <typename NumericType>
