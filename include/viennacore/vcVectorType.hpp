@@ -136,16 +136,24 @@ template <typename NumericType, size_t D>
 template <typename NumericType, size_t D>
 void __both__ Normalize(VectorType<NumericType, D> &vec) {
   NumericType n = Norm2(vec);
-  if (n <= 0.) {
+  if (n <= std::numeric_limits<NumericType>::min()) {
     for (size_t i = 0; i < D; ++i)
       vec[i] = 0;
     return;
   }
-  if (n == 1.)
+
+#if defined(__CUDA_ARCH__)
+  n = rsqrtf(n); // fast on GPU
+#else
+  // Optional fast path: skip if already ~unit
+  if (std::abs(n - NumericType(1)) < NumericType(1e-6))
     return;
-  n = sqrt(n);
+
+  n = NumericType(1) / std::sqrt(n); // CPU
+#endif
+
   for (size_t i = 0; i < D; ++i)
-    vec[i] /= n;
+    vec[i] *= n;
 }
 
 template <typename NumericType, size_t D>
@@ -153,15 +161,25 @@ template <typename NumericType, size_t D>
 Normalize(const VectorType<NumericType, D> &vec) {
   VectorType<NumericType, D> rr = vec;
   NumericType norm = Norm2(vec);
-  if (norm == NumericType(1))
-    return rr;
-  if (norm <= NumericType(0)) {
+  if (norm <= std::numeric_limits<NumericType>::min()) {
     for (size_t i = 0; i < D; ++i)
       rr[i] = 0;
     return rr;
   }
-  norm = sqrt(norm);
-  return rr / norm;
+
+#if defined(__CUDA_ARCH__)
+  norm = rsqrtf(norm); // fast on GPU
+#else
+  if (std::abs(norm - NumericType(1)) < NumericType(1e-6))
+    return rr;
+
+  norm = NumericType(1) / std::sqrt(norm); // CPU
+#endif
+
+  for (size_t i = 0; i < D; ++i)
+    rr[i] *= norm;
+
+  return rr;
 }
 
 template <typename NumericType, size_t D>
