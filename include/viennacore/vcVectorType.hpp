@@ -135,7 +135,7 @@ template <typename NumericType, size_t D>
 
 template <typename NumericType, size_t D>
 void __both__ Normalize(VectorType<NumericType, D> &vec) {
-  NumericType n = Norm(vec);
+  NumericType n = Norm2(vec);
   if (n <= 0.) {
     for (size_t i = 0; i < D; ++i)
       vec[i] = 0;
@@ -143,6 +143,7 @@ void __both__ Normalize(VectorType<NumericType, D> &vec) {
   }
   if (n == 1.)
     return;
+  n = sqrt(n);
   for (size_t i = 0; i < D; ++i)
     vec[i] /= n;
 }
@@ -151,7 +152,7 @@ template <typename NumericType, size_t D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
 Normalize(const VectorType<NumericType, D> &vec) {
   VectorType<NumericType, D> rr = vec;
-  NumericType norm = Norm(vec);
+  NumericType norm = Norm2(vec);
   if (norm == NumericType(1))
     return rr;
   if (norm <= NumericType(0)) {
@@ -159,6 +160,7 @@ Normalize(const VectorType<NumericType, D> &vec) {
       rr[i] = 0;
     return rr;
   }
+  norm = sqrt(norm);
   return rr / norm;
 }
 
