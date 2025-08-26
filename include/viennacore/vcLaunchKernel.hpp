@@ -14,7 +14,8 @@ class LaunchKernel {
 public:
   static void launch(const std::string &moduleName,
                      const std::string &kernelName, void **kernel_args,
-                     Context &context, unsigned long sharedMemoryInBytes = 0) {
+                     DeviceContext &context,
+                     unsigned long sharedMemoryInBytes = 0) {
 
     CUmodule module = context.getModule(moduleName);
     CUfunction function;
@@ -40,7 +41,7 @@ public:
 
   static void launchSingle(const std::string &moduleName,
                            const std::string &kernelName, void **kernel_args,
-                           Context &context,
+                           DeviceContext &context,
                            unsigned long sharedMemoryInBytes = 0) {
 
     CUmodule module = context.getModule(moduleName);
