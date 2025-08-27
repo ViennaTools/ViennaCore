@@ -78,10 +78,10 @@ if(VIENNACORE_USE_GPU)
       GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
     set(OptiX_INSTALL_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}
-        CACHE PATH "Path to OptiX installation")
+        CACHE PATH "Path to OptiX installation" FORCE)
     set(OptiX_INCLUDE_DIR
         ${OptiX_INSTALL_DIR}/include
-        CACHE PATH "Path to OptiX include directory.")
+        CACHE PATH "Path to OptiX include directory." FORCE)
   else()
     # Search for the OptiX include files.
     find_package(OptiX 8.0 QUIET)
