@@ -103,7 +103,8 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "ViennaCore CUDA libraries" FORCE)
 
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
-    target_include_directories(${PROJECT_NAME} INTERFACE ${CUDA_INCLUDE_DIRS} ${OptiX_INCLUDE_DIR})
+    target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
+                                                         $<BUILD_INTERFACE:${CUDA_INCLUDE_DIR}>)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${VIENNACORE_GPU_LIBS})
   else()
     message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
