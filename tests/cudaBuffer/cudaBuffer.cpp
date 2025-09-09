@@ -7,7 +7,7 @@ int main() {
   using namespace viennacore;
   Logger::setLogLevel(LogLevel::DEBUG);
 
-  Context context;
+  DeviceContext context;
   context.create(); // necessary to initialize CUDA
 
   CudaBuffer buffer;

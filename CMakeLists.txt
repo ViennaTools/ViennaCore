@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.5.0)
+  VERSION 1.6.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -78,10 +78,10 @@ if(VIENNACORE_USE_GPU)
       GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
     set(OptiX_INSTALL_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}
-        CACHE PATH "Path to OptiX installation")
+        CACHE PATH "Path to OptiX installation" FORCE)
     set(OptiX_INCLUDE_DIR
         ${OptiX_INSTALL_DIR}/include
-        CACHE PATH "Path to OptiX include directory.")
+        CACHE PATH "Path to OptiX include directory." FORCE)
   else()
     # Search for the OptiX include files.
     find_package(OptiX 8.0 QUIET)
@@ -103,6 +103,9 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "ViennaCore CUDA libraries" FORCE)
 
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU)
+    target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
+                                                         $<BUILD_INTERFACE:${CUDA_INCLUDE_DIR}>)
+    target_link_libraries(${PROJECT_NAME} INTERFACE ${VIENNACORE_GPU_LIBS})
   else()
     message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
   endif()

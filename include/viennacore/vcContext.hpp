@@ -1,19 +1,23 @@
 #pragma once
 
-#include <algorithm>
-#include <cassert>
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <filesystem>
+
+// this include may only appear in a single source file:
+#include <optix_function_table_definition.h>
 #include <optix_stubs.h>
+
+#include <algorithm>
+#include <cassert>
+#include <filesystem>
+#include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "vcChecks.hpp"
 #include "vcLogger.hpp"
-
-// this include may only appear in a single source file:
-#include <optix_function_table_definition.h>
 
 #define STRINGIFY_HELPER(X) #X
 #define STRINGIFY(X) STRINGIFY_HELPER(X)
@@ -26,6 +30,28 @@
 
 namespace viennacore {
 
+/**
+ * Global DeviceContext Registry Usage Examples:
+ *
+ * // Create and register a context for device 0
+ * auto context0 = DeviceContext::createContext("/path/to/modules", 0);
+ *
+ * // Later, query the context from anywhere in your code
+ * auto queriedContext = DeviceContext::getContextFromRegistry(0);
+ *
+ * // Check if a context exists for a device
+ * if (DeviceContext::hasContextInRegistry(1)) {
+ *   auto context1 = DeviceContext::getContextFromRegistry(1);
+ * }
+ *
+ * // Get all registered device IDs
+ * auto deviceIDs = DeviceContext::getRegisteredDeviceIDs();
+ *
+ * // Create a context without registering it globally
+ * auto localContext = DeviceContext::createContext("/path/to/modules", 2,
+ * false);
+ */
+
 static void contextLogCallback(unsigned int level, const char *tag,
                                const char *message, void *) {
 #ifndef NDEBUG
@@ -33,13 +59,91 @@ static void contextLogCallback(unsigned int level, const char *tag,
 #endif
 }
 
-struct Context {
+// Forward declaration
+struct DeviceContext;
+
+class DeviceContextRegistry {
+public:
+  static DeviceContextRegistry &getInstance() {
+    static DeviceContextRegistry instance;
+    return instance;
+  }
+
+  // Register a context with the registry
+  void registerContext(int deviceID, std::shared_ptr<DeviceContext> context) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    contexts_[deviceID] = context;
+  }
+
+  // Get a context by device ID
+  std::shared_ptr<DeviceContext> getContext(int deviceID) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = contexts_.find(deviceID);
+    if (it != contexts_.end()) {
+      return it->second;
+    }
+    return nullptr;
+  }
+
+  // Check if a context exists for a device ID
+  bool hasContext(int deviceID) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return contexts_.find(deviceID) != contexts_.end();
+  }
+
+  // Remove a context from the registry
+  void unregisterContext(int deviceID) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    contexts_.erase(deviceID);
+  }
+
+  // Get all registered device IDs
+  std::vector<int> getRegisteredDeviceIDs() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::vector<int> deviceIDs;
+    for (const auto &pair : contexts_) {
+      deviceIDs.push_back(pair.first);
+    }
+    return deviceIDs;
+  }
+
+  // Clear all contexts from the registry
+  void clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    contexts_.clear();
+  }
+
+private:
+  DeviceContextRegistry() = default;
+  ~DeviceContextRegistry() = default;
+  DeviceContextRegistry(const DeviceContextRegistry &) = delete;
+  DeviceContextRegistry &operator=(const DeviceContextRegistry &) = delete;
+
+  std::unordered_map<int, std::shared_ptr<DeviceContext>> contexts_;
+  std::mutex mutex_;
+};
+
+struct DeviceContext {
+  // Static factory methods for creating and managing contexts
+  static std::shared_ptr<DeviceContext>
+  createContext(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
+                const int deviceID = 0, bool registerInGlobal = true);
+
+  static std::shared_ptr<DeviceContext> getContextFromRegistry(int deviceID);
+
+  static bool hasContextInRegistry(int deviceID);
+
+  static std::vector<int> getRegisteredDeviceIDs();
+
+  // Instance methods
   void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
               const int deviceID = 0);
   CUmodule getModule(const std::string &moduleName);
   void addModule(const std::string &moduleName);
   std::string getModulePath() const { return modulePath.string(); }
   std::string getDeviceName() const { return deviceProps.name; }
+  int getDeviceID() const { return deviceID; }
+
   void destroy() {
     if (deviceID == -1)
       return;
@@ -49,6 +153,10 @@ struct Context {
     }
     optixDeviceContextDestroy(optix);
     cuCtxDestroy(cuda);
+
+    // Unregister from global registry
+    DeviceContextRegistry::getInstance().unregisterContext(deviceID);
+
     deviceID = -1;
   }
 
@@ -62,7 +170,7 @@ struct Context {
   int deviceID = -1;
 };
 
-CUmodule Context::getModule(const std::string &moduleName) {
+CUmodule DeviceContext::getModule(const std::string &moduleName) {
   int idx = -1;
   for (int i = 0; i < modules.size(); i++) {
     if (this->moduleNames[i] == moduleName) {
@@ -79,7 +187,7 @@ CUmodule Context::getModule(const std::string &moduleName) {
   return modules[idx];
 }
 
-void Context::addModule(const std::string &moduleName) {
+void DeviceContext::addModule(const std::string &moduleName) {
   if (deviceID == -1) {
     viennacore::Logger::getInstance()
         .addError("Context not initialized. Use 'create' to "
@@ -102,7 +210,8 @@ void Context::addModule(const std::string &moduleName) {
   moduleNames.push_back(moduleName);
 }
 
-void Context::create(std::filesystem::path modulePath, const int deviceID) {
+void DeviceContext::create(std::filesystem::path modulePath,
+                           const int deviceID) {
 
   // create new context
   this->modulePath = modulePath;
@@ -150,6 +259,48 @@ void Context::create(std::filesystem::path modulePath, const int deviceID) {
 
   optixDeviceContextCreate(cuda, 0, &optix);
   optixDeviceContextSetLogCallback(optix, contextLogCallback, nullptr, 4);
+}
+
+// Static factory method implementations
+std::shared_ptr<DeviceContext>
+DeviceContext::createContext(std::filesystem::path modulePath,
+                             const int deviceID, bool registerInGlobal) {
+
+  // Check if context already exists for this device
+  if (registerInGlobal &&
+      DeviceContextRegistry::getInstance().hasContext(deviceID)) {
+    viennacore::Logger::getInstance()
+        .addWarning("Context for device " + std::to_string(deviceID) +
+                    " already exists in registry. Returning existing context.")
+        .print();
+    return DeviceContextRegistry::getInstance().getContext(deviceID);
+  }
+
+  auto context = std::make_shared<DeviceContext>();
+  context->create(modulePath, deviceID);
+
+  if (registerInGlobal) {
+    DeviceContextRegistry::getInstance().registerContext(deviceID, context);
+    viennacore::Logger::getInstance()
+        .addDebug("Context for device " + std::to_string(deviceID) +
+                  " registered in global registry.")
+        .print();
+  }
+
+  return context;
+}
+
+std::shared_ptr<DeviceContext>
+DeviceContext::getContextFromRegistry(int deviceID) {
+  return DeviceContextRegistry::getInstance().getContext(deviceID);
+}
+
+bool DeviceContext::hasContextInRegistry(int deviceID) {
+  return DeviceContextRegistry::getInstance().hasContext(deviceID);
+}
+
+std::vector<int> DeviceContext::getRegisteredDeviceIDs() {
+  return DeviceContextRegistry::getInstance().getRegisteredDeviceIDs();
 }
 
 } // namespace viennacore

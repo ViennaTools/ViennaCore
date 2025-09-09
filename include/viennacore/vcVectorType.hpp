@@ -83,20 +83,34 @@ _define_operator(-);
 
 #undef _define_operator
 
+// Base case for single vector
 template <typename NumericType, size_t D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
-Sum(const VectorType<NumericType, D> &a, const VectorType<NumericType, D> &b,
-    const VectorType<NumericType, D> &c) {
-  VectorType<NumericType, D> rr;
+Sum(const VectorType<NumericType, D> &vec) noexcept {
+  return vec;
+}
+
+// Recursive variadic template for summing any number of vectors
+template <typename NumericType, size_t D, typename... Args>
+[[nodiscard]] __both__ VectorType<NumericType, D>
+Sum(const VectorType<NumericType, D> &first,
+    const VectorType<NumericType, D> &second, const Args &...args) noexcept {
+  VectorType<NumericType, D> result;
   for (size_t i = 0; i < D; ++i) {
-    rr[i] = a[i] + b[i] + c[i];
+    result[i] = first[i] + second[i];
   }
-  return rr;
+
+  if constexpr (sizeof...(args) > 0) {
+    return Sum(result, args...);
+  } else {
+    return result;
+  }
 }
 
 template <typename NumericType, size_t D>
-[[nodiscard]] __both__ NumericType DotProduct(
-    const VectorType<NumericType, D> &a, const VectorType<NumericType, D> &b) {
+[[nodiscard]] __both__ NumericType
+DotProduct(const VectorType<NumericType, D> &a,
+           const VectorType<NumericType, D> &b) noexcept {
   NumericType dot = 0;
   for (size_t i = 0; i < D; ++i) {
     dot += a[i] * b[i];
@@ -106,7 +120,8 @@ template <typename NumericType, size_t D>
 
 template <typename NumericType>
 [[nodiscard]] __both__ Vec3D<NumericType>
-CrossProduct(const Vec3D<NumericType> &a, const Vec3D<NumericType> &b) {
+CrossProduct(const Vec3D<NumericType> &a,
+             const Vec3D<NumericType> &b) noexcept {
   Vec3D<NumericType> rr;
   rr[0] = a[1] * b[2] - a[2] * b[1];
   rr[1] = a[2] * b[0] - a[0] * b[2];
@@ -115,14 +130,14 @@ CrossProduct(const Vec3D<NumericType> &a, const Vec3D<NumericType> &b) {
 }
 
 template <class NumericType>
-[[nodiscard]] __both__ NumericType CrossProduct(const Vec2D<NumericType> &v1,
-                                                const Vec2D<NumericType> &v2) {
+[[nodiscard]] __both__ NumericType CrossProduct(
+    const Vec2D<NumericType> &v1, const Vec2D<NumericType> &v2) noexcept {
   return v1[0] * v2[1] - v1[1] * v2[0];
 }
 
 template <typename NumericType, size_t D>
 [[nodiscard]] __both__ NumericType
-Norm2(const VectorType<NumericType, D> &vec) {
+Norm2(const VectorType<NumericType, D> &vec) noexcept {
   return DotProduct(vec, vec);
 }
 
@@ -141,7 +156,11 @@ void __both__ Normalize(VectorType<NumericType, D> &vec) {
   }
 
 #if defined(__CUDA_ARCH__)
-  n = rsqrtf(n); // fast on GPU
+  if constexpr (std::is_same_v<NumericType, float>) {
+    n = rsqrtf(n); // fast on GPU for float
+  } else {
+    n = NumericType(1) / std::sqrt(n); // for double and other types
+  }
 #else
   // Optional fast path: skip if already ~unit
   if (std::abs(n - NumericType(1)) < NumericType(1e-6))
@@ -166,7 +185,11 @@ Normalize(const VectorType<NumericType, D> &vec) {
   }
 
 #if defined(__CUDA_ARCH__)
-  norm = rsqrtf(norm); // fast on GPU
+  if constexpr (std::is_same_v<NumericType, float>) {
+    norm = rsqrtf(norm); // fast on GPU for float
+  } else {
+    norm = NumericType(1) / std::sqrt(norm); // for double and other types
+  }
 #else
   if (std::abs(norm - NumericType(1)) < NumericType(1e-6))
     return rr;
@@ -183,14 +206,19 @@ Normalize(const VectorType<NumericType, D> &vec) {
 template <typename NumericType, size_t D>
 __both__ void ScaleToLength(VectorType<NumericType, D> &vec,
                             const NumericType length) {
-  const auto scale = length / Norm(vec);
+  const auto norm = Norm(vec);
+  if (norm <= std::numeric_limits<NumericType>::min()) {
+    // Handle zero vector case - can't scale a zero vector
+    return;
+  }
+  const auto scale = length / norm;
   for (size_t i = 0; i < D; i++)
     vec[i] *= scale;
 }
 
 template <typename NumericType, size_t D>
 [[nodiscard]] __both__ VectorType<NumericType, D>
-Inv(const VectorType<NumericType, D> &vec) {
+Inv(const VectorType<NumericType, D> &vec) noexcept {
   VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = -vec[i];
@@ -199,9 +227,10 @@ Inv(const VectorType<NumericType, D> &vec) {
 }
 
 template <typename NumericType, size_t D>
-__both__ VectorType<NumericType, D>
+[[nodiscard]] __both__ VectorType<NumericType, D>
 ScaleAdd(const VectorType<NumericType, D> &mult,
-         const VectorType<NumericType, D> &add, const NumericType fac) {
+         const VectorType<NumericType, D> &add,
+         const NumericType fac) noexcept {
   VectorType<NumericType, D> rr;
   for (size_t i = 0; i < D; ++i) {
     rr[i] = add[i] + mult[i] * fac;
@@ -218,7 +247,7 @@ Distance(const VectorType<NumericType, D> &a,
 
 template <typename NumericType>
 [[nodiscard]] __both__ Vec3D<NumericType>
-ComputeNormal(const std::array<Vec3D<NumericType>, 3> &planeCoords) {
+ComputeNormal(const std::array<Vec3D<NumericType>, 3> &planeCoords) noexcept {
   auto uu = planeCoords[1] - planeCoords[0];
   auto vv = planeCoords[2] - planeCoords[0];
   return CrossProduct(uu, vv);
@@ -226,82 +255,85 @@ ComputeNormal(const std::array<Vec3D<NumericType>, 3> &planeCoords) {
 
 template <typename NumericType, size_t D>
 __both__ bool IsNormalized(const VectorType<NumericType, D> &vec,
-                           const double eps = 1e-4) {
+                           const NumericType eps = NumericType(1e-4)) {
   auto norm = Norm(vec);
-  return std::fabs(norm - 1) < eps;
+  return std::abs(norm - NumericType(1)) < eps;
 }
 
-template <class T> __both__ Vec2D<T> RotateLeft(const Vec2D<T> &v) {
+template <class T> __both__ Vec2D<T> RotateLeft(const Vec2D<T> &v) noexcept {
   return Vec2D<T>(-v[1], v[0]);
 }
 
-template <class T> Vec2D<T> __both__ RotateRight(const Vec2D<T> &v) {
+template <class T> Vec2D<T> __both__ RotateRight(const Vec2D<T> &v) noexcept {
   return Vec2D<T>(v[1], -v[0]);
 }
 
 template <class T, size_t D>
 __both__ VectorType<T, D> Min(const VectorType<T, D> &v1,
-                              const VectorType<T, D> &v2) {
+                              const VectorType<T, D> &v2) noexcept {
   VectorType<T, D> v;
-  for (int i = 0; i < D; i++)
+  for (size_t i = 0; i < D; i++)
     v[i] = std::min(v1[i], v2[i]);
   return v;
 }
 
 template <class T, size_t D>
 __both__ VectorType<T, D> Max(const VectorType<T, D> &v1,
-                              const VectorType<T, D> &v2) {
+                              const VectorType<T, D> &v2) noexcept {
   VectorType<T, D> v;
-  for (int i = 0; i < D; i++)
+  for (size_t i = 0; i < D; i++)
     v[i] = std::max(v1[i], v2[i]);
   return v;
 }
 
-template <class T, size_t D> __both__ T MaxElement(const VectorType<T, D> &v1) {
+template <class T, size_t D>
+__both__ T MaxElement(const VectorType<T, D> &v1) noexcept {
   T v = v1[0];
-  for (int i = 1; i < D; i++)
+  for (size_t i = 1; i < D; i++)
     v = std::max(v1[i], v);
   return v;
 }
 
-template <class T> __both__ T Volume(const VectorType<T, 2> &p) {
+template <class T> __both__ T Volume(const VectorType<T, 2> &p) noexcept {
   return p[0] * p[1];
 }
 
-template <class T> __both__ T Volume(const VectorType<T, 3> &p) {
+template <class T> __both__ T Volume(const VectorType<T, 3> &p) noexcept {
   return p[0] * p[1] * p[2];
 }
 
-template <class T, size_t D> __both__ int MinIndex(const VectorType<T, D> &v) {
-  int idx = 0;
-  for (int i = 1; i < D; i++) {
+template <class T, size_t D>
+__both__ size_t MinIndex(const VectorType<T, D> &v) noexcept {
+  size_t idx = 0;
+  for (size_t i = 1; i < D; i++) {
     if (v[i] < v[idx])
       idx = i;
   }
   return idx;
 }
 
-template <class T, size_t D> __both__ int MaxIndex(const VectorType<T, D> &v) {
-  int idx = 0;
-  for (int i = 1; i < D; i++) {
+template <class T, size_t D>
+__both__ size_t MaxIndex(const VectorType<T, D> &v) noexcept {
+  size_t idx = 0;
+  for (size_t i = 1; i < D; i++) {
     if (v[i] > v[idx])
       idx = i;
   }
   return idx;
 }
 
-template <class T> __both__ bool Orientation(const Vec3D<T> *v) {
+template <class T> __both__ bool Orientation(const Vec3D<T> *v) noexcept {
   return DotProduct(CrossProduct(v[1] - v[0], v[2] - v[0]), v[3] - v[0]) >= -0.;
 }
 
-template <class T> __both__ bool Orientation(const Vec2D<T> *v) {
+template <class T> __both__ bool Orientation(const Vec2D<T> *v) noexcept {
   return DotProduct(RotateLeft(v[1] - v[0]), v[2] - v[0]) >= -0.;
 }
 
 template <class T, size_t D>
 __both__ bool AnyEqualElement(const VectorType<T, D> &v1,
-                              const VectorType<T, D> &v2) {
-  for (int i = 0; i < D - 1; ++i) {
+                              const VectorType<T, D> &v2) noexcept {
+  for (size_t i = 0; i < D; ++i) {
     if (v1[i] == v2[i])
       return true;
   }
@@ -310,34 +342,21 @@ __both__ bool AnyEqualElement(const VectorType<T, D> &v1,
 
 template <typename T, size_t D> struct VectorHash {
 private:
-  static size_t hash_combine(size_t lhs, size_t rhs) {
+  static size_t hash_combine(size_t lhs, size_t rhs) noexcept {
     lhs ^= rhs + 0x9e3779b9 + (lhs << 6) + (lhs >> 2);
     return lhs;
   }
 
 public:
-  size_t operator()(const VectorType<T, D> &v) const {
-
+  size_t operator()(const VectorType<T, D> &v) const noexcept {
     /*
       https://stackoverflow.com/questions/5889238/why-is-xor-the-default-way-to-combine-hashes
     */
     size_t result = std::hash<T>{}(v[0]);
-    result = hash_combine(result, std::hash<T>{}(v[1]));
-    if (D == 3) {
-      result = hash_combine(result, std::hash<T>{}(v[2]));
+    for (size_t i = 1; i < D; ++i) {
+      result = hash_combine(result, std::hash<T>{}(v[i]));
     }
     return result;
-
-    // Compute individual hash values for first,
-    // second and third and combine them using XOR
-    // and bit shifting:
-
-    // size_t result = hash<T>()(v[0]);
-    // result ^= hash<T>()(v[1]) << 1;
-    // if (D == 3) {
-    //   result = (result >> 1) ^ (hash<T>()(v[2]) << 1);
-    // }
-    // return result;
   }
 };
 

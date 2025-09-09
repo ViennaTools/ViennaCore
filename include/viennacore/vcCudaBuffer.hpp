@@ -2,9 +2,10 @@
 
 #ifdef VIENNACORE_COMPILE_GPU
 
+#include <cuda_runtime.h>
+
 #include <cassert>
 #include <cstddef>
-#include <cuda_runtime.h>
 #include <vector>
 
 #include "vcChecks.hpp"
