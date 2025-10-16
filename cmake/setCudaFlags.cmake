@@ -44,6 +44,7 @@ if(NOT PASSED_FIRST_CONFIGURE)
   add_cuda_flag("--expt-relaxed-constexpr")
   add_cuda_flag("--generate-line-info")
   add_cuda_flag("-diag-suppress 20044")
+  add_cuda_flag("--relocatable-device-code true")
 
   # CMAKE_CONFIGURATION_TYPES is only defined for multi-config build systems like
   # MSVC and Ninja, but we need to generate flags for each configuration
