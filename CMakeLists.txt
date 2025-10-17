@@ -9,9 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-
-option(VIENNACORE_USE_GPU "Enable GPU support" OFF)
-option(VIENNACORE_FETCH_OPTIX "Fetch OptiX from GitHub" OFF)
+option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" OFF)
 
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
@@ -70,8 +68,10 @@ if(VIENNACORE_USE_GPU)
 
   # Find the CUDA Toolkit
   find_package(CUDA 12.0 QUIET)
+  find_package(OptiX 8.0.0 QUIET)
 
-  if(VIENNACORE_FETCH_OPTIX)
+  if(NOT OptiX_INCLUDE_DIR)
+    # If OptiX not found, download it using CPM
     CPMAddPackage(
       NAME OptiX
       VERSION 8.0.0
@@ -79,15 +79,10 @@ if(VIENNACORE_USE_GPU)
     set(OptiX_INSTALL_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}
         CACHE PATH "Path to OptiX installation" FORCE)
-    set(OptiX_INCLUDE_DIR
-        ${OptiX_INSTALL_DIR}/include
-        CACHE PATH "Path to OptiX include directory." FORCE)
-  else()
-    # Search for the OptiX include files.
-    find_package(OptiX 8.0 QUIET)
+    find_package(OptiX 8.0.0 REQUIRED)
   endif()
 
-  # Requires both CUDA and OptiX
+  # GPU enabled requires both CUDA and OptiX
   if(CUDA_FOUND AND OptiX_INCLUDE_DIR)
     message(STATUS "[ViennaCore] Enabling GPU support")
     include("cmake/setCudaFlags.cmake")
@@ -107,7 +102,7 @@ if(VIENNACORE_USE_GPU)
                                                          $<BUILD_INTERFACE:${CUDA_INCLUDE_DIRS}>)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${VIENNACORE_GPU_LIBS})
   else()
-    message(FATAL_ERROR "CUDA Toolkit or OptiX not found. Cannot build GPU module.")
+    message(FATAL_ERROR "CUDA Toolkit not found. Cannot build GPU module.")
   endif()
 endif()
 

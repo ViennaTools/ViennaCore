@@ -195,6 +195,7 @@ void DeviceContext::addModule(const std::string &moduleName) {
         .print();
   }
 
+  // Check if module already loaded
   if (std::find(moduleNames.begin(), moduleNames.end(), moduleName) !=
       moduleNames.end()) {
     return;
@@ -253,6 +254,7 @@ void DeviceContext::create(std::filesystem::path modulePath,
   viennacore::Logger::getInstance()
       .addDebug("PTX kernels path: " + modulePath.string())
       .print();
+  // no default modules for now
 
   // initialize OptiX context
   OPTIX_CHECK(optixInit());
