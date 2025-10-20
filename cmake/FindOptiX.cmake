@@ -125,3 +125,15 @@ if(OptiX_ROOT_DIR)
       ${OptiX_ROOT_DIR}/include
       CACHE PATH "Path to OptiX include directory." FORCE)
 endif()
+
+# Use normalized version
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(
+  OptiX
+  FOUND_VAR OptiX_FOUND
+  VERSION_VAR OPTIX_VERSION
+  REQUIRED_VARS
+    OptiX_ROOT_DIR
+    REASON_FAILURE_MESSAGE
+    "OptiX installation not found. Please use CMAKE_PREFIX_PATH or OptiX_INSTALL_DIR to locate 'include/optix.h'."
+)

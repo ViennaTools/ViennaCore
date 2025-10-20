@@ -79,7 +79,9 @@ if(VIENNACORE_USE_GPU)
     set(OptiX_INSTALL_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}
         CACHE PATH "Path to OptiX installation" FORCE)
-    find_package(OptiX 8.0.0 REQUIRED)
+    set(OptiX_INCLUDE_DIR
+        ${OptiX_INSTALL_DIR}/include
+        CACHE PATH "Path to OptiX include directory." FORCE)
   endif()
 
   # GPU enabled requires both CUDA and OptiX
