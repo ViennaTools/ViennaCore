@@ -122,19 +122,6 @@ if(OptiX_ROOT_DIR)
   set(OPTIX_VERSION "${OPTIX_VERSION_MAJOR}.${OPTIX_VERSION_MINOR}.${OPTIX_VERSION_PATCH}")
 
   set(OptiX_INCLUDE_DIR
-    ${OptiX_ROOT_DIR}/include
-    CACHE PATH "Path to OptiX include directory." FORCE)
+      ${OptiX_ROOT_DIR}/include
+      CACHE PATH "Path to OptiX include directory." FORCE)
 endif()
-
-# Use normalized version
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(
-  OptiX
-  FOUND_VAR OptiX_FOUND
-  VERSION_VAR OPTIX_VERSION
-  REQUIRED_VARS
-    OptiX_ROOT_DIR
-    REASON_FAILURE_MESSAGE
-    "OptiX installation not found. Please use CMAKE_PREFIX_PATH or OptiX_INSTALL_DIR to locate 'include/optix.h'."
-)
-
