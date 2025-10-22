@@ -80,7 +80,7 @@ if(VIENNACORE_USE_GPU)
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}
         CACHE PATH "Path to OptiX installation" FORCE)
     set(OptiX_INCLUDE_DIR
-        ${OptiX_INSTALL_DIR}/include
+        ${CPM_PACKAGE_OptiX_SOURCE_DIR}/include
         CACHE PATH "Path to OptiX include directory." FORCE)
   endif()
 
