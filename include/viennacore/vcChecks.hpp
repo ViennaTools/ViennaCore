@@ -13,17 +13,17 @@
   {                                                                            \
     cudaError_t rc = cuda##call;                                               \
     if (rc != cudaSuccess) {                                                   \
-      std::stringstream txt;                                                   \
-      cudaError_t err = rc; /*cudaGetLastError();*/                            \
-      txt << TM_RED << "CUDA Error " << cudaGetErrorName(err) << " ("          \
-          << cudaGetErrorString(err) << ")" << TM_RESET;                       \
-      std::cerr << txt.str() << std::endl;                                     \
+      fprintf(stderr, "\033[1;31mCuda Error %s (%s: line %d): %s\033[0m\n",    \
+              cudaGetErrorName(rc), __FILE__, __LINE__,                        \
+              cudaGetErrorString(rc));                                         \
       exit(2);                                                                 \
     }                                                                          \
   }
 
 #define CUDA_CHECK_NOEXCEPT(call)                                              \
-  { cuda##call; }
+  {                                                                            \
+    cuda##call;                                                                \
+  }
 
 #define OPTIX_CHECK(call)                                                      \
   {                                                                            \
@@ -42,8 +42,9 @@
     cudaDeviceSynchronize();                                                   \
     cudaError_t error = cudaGetLastError();                                    \
     if (error != cudaSuccess) {                                                \
-      fprintf(stderr, "\033[1;31mCuda Error (%s: line %d): %s\033[0m\n",       \
-              __FILE__, __LINE__, cudaGetErrorString(error));                  \
+      fprintf(stderr, "\033[1;31mCuda Error %s (%s: line %d): %s\033[0m\n",    \
+              cudaGetErrorName(error), __FILE__, __LINE__,                     \
+              cudaGetErrorString(error));                                      \
       exit(2);                                                                 \
     }                                                                          \
   }

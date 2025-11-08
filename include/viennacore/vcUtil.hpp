@@ -50,6 +50,11 @@ inline __both__ double sqrt(const double d) { return ::sqrt(d); }
 
 namespace util {
 
+template <class NumericType>
+[[nodiscard]] inline NumericType saturate(NumericType val) {
+  return std::clamp(val, NumericType(0), NumericType(1));
+}
+
 // Checks if a string starts with an - or not
 [[nodiscard]] inline bool isSigned(const std::string &s) {
   const auto pos = s.find_first_not_of(' ');
