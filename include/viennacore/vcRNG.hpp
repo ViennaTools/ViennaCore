@@ -13,14 +13,12 @@
 namespace viennacore {
 
 #ifdef VIENNACORE_COMPILE_GPU
-namespace gpu {
-using RNGState = curandStatePhilox4_32_10_t;
-// Other possible RNGState types:
+using CudaRNG = curandStatePhilox4_32_10_t;
+// Other possible RNG State types:
 // typedef curandStateXORWOW_t curtRNGState; // bad
 // typedef curandStateMRG32k3a_t curtRNGState // not tested
 // typedef curandStateSobol32_t curtRNGState; // not tested
 // typedef curandStateScrambledSobol32_t curtRNGState; // not tested
-} // namespace gpu
 #endif
 
 #if defined(VIENNACORE_RNG_MT19937_64)
