@@ -1,8 +1,28 @@
 #pragma once
 
 #include "vcPhiloxRNG.hpp"
+#include "vcUtil.hpp"
+
+#include <random>
+
+#ifdef VIENNACORE_COMPILE_GPU
+#include <curand.h>
+#include <curand_kernel.h>
+#endif
 
 namespace viennacore {
+
+#ifdef VIENNACORE_COMPILE_GPU
+namespace gpu {
+using RNGState = curandStatePhilox4_32_10_t;
+// Other possible RNGState types:
+// typedef curandStateXORWOW_t curtRNGState; // bad
+// typedef curandStateMRG32k3a_t curtRNGState // not tested
+// typedef curandStateSobol32_t curtRNGState; // not tested
+// typedef curandStateScrambledSobol32_t curtRNGState; // not tested
+} // namespace gpu
+#endif
+
 #if defined(VIENNACORE_RNG_MT19937_64)
 using RNG = std::mt19937_64;
 #elif defined(VIENNACORE_RNG_MT19937_32)
@@ -39,7 +59,7 @@ public:
 
 // tiny encryption algorithm
 template <unsigned int N>
-static unsigned int tea(unsigned int v0, unsigned int v1) {
+__both__ unsigned int tea(unsigned int v0, unsigned int v1) {
   unsigned int s0 = 0;
 
   for (unsigned int n = 0; n < N; n++) {
@@ -50,4 +70,18 @@ static unsigned int tea(unsigned int v0, unsigned int v1) {
 
   return v0;
 }
+
+#ifdef __CUDACC__
+__device__ __inline__ float getNextRand(RNGState *state) {
+  return curand_uniform(state);
+}
+
+__device__ __inline__ float getNormalDistRand(RNGState *state) {
+  float4 u0 = curand_uniform4(state);
+  float r = sqrtf(-2.f * logf(u0.x));
+  float theta = 2.f * M_PIf * u0.y;
+  return r * sinf(theta);
+}
+#endif
+
 } // namespace viennacore

@@ -7,8 +7,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "vcLogger.hpp"
-
 #define CUDA_CHECK(call)                                                       \
   {                                                                            \
     cudaError_t rc = cuda##call;                                               \
@@ -21,9 +19,7 @@
   }
 
 #define CUDA_CHECK_NOEXCEPT(call)                                              \
-  {                                                                            \
-    cuda##call;                                                                \
-  }
+  { cuda##call; }
 
 #define OPTIX_CHECK(call)                                                      \
   {                                                                            \

@@ -14,6 +14,13 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
+#ifndef NDEBUG
+  ~CudaBuffer() {
+    assert((isRef || allocFreeCount == 0) &&
+           "CudaBuffer destroyed without freeing allocated memory!");
+  }
+#endif
+
   [[nodiscard]] inline CUdeviceptr dPointer() const {
     return (CUdeviceptr)d_ptr;
   }
@@ -30,6 +37,9 @@ struct CudaBuffer {
       free();
     sizeInBytes = size * sizeof(T);
     CUDA_CHECK(Malloc((void **)&d_ptr, sizeInBytes));
+#ifndef NDEBUG
+    allocFreeCount++;
+#endif
     CUDA_CHECK(Memset(d_ptr, init, sizeInBytes));
   }
 
@@ -45,6 +55,9 @@ struct CudaBuffer {
       free();
     this->sizeInBytes = size;
     CUDA_CHECK(Malloc((void **)&d_ptr, sizeInBytes));
+#ifndef NDEBUG
+    allocFreeCount++;
+#endif
   }
 
   // free allocated memory
@@ -54,6 +67,9 @@ struct CudaBuffer {
       return;
     }
     CUDA_CHECK(Free(d_ptr));
+#ifndef NDEBUG
+    allocFreeCount--;
+#endif
     d_ptr = nullptr;
     sizeInBytes = 0;
   }
@@ -84,6 +100,10 @@ struct CudaBuffer {
 
   size_t sizeInBytes{0};
   void *d_ptr{nullptr};
+#ifndef NDEBUG
+  int allocFreeCount = 0;
+  bool isRef = false;
+#endif
 };
 
 } // namespace viennacore
