@@ -22,5 +22,6 @@ int main() {
     VC_TEST_ASSERT(test[i] == data[i]);
   }
 
+  buffer.free();
   context.destroy();
 }
