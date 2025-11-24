@@ -70,11 +70,11 @@ __both__ unsigned int tea(unsigned int v0, unsigned int v1) {
 }
 
 #ifdef __CUDACC__
-__device__ __inline__ float getNextRand(RNGState *state) {
+__device__ __inline__ float getNextRand(CudaRNG *state) {
   return curand_uniform(state);
 }
 
-__device__ __inline__ float getNormalDistRand(RNGState *state) {
+__device__ __inline__ float getNormalDistRand(CudaRNG *state) {
   float4 u0 = curand_uniform4(state);
   float r = sqrtf(-2.f * logf(u0.x));
   float theta = 2.f * M_PIf * u0.y;
