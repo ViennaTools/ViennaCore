@@ -72,6 +72,26 @@ public:
 
   bool hasError() const { return error; }
 
+  static bool hasDebug() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::DEBUG);
+  }
+
+  static bool hasTiming() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::TIMING);
+  }
+
+  static bool hasIntermediate() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::INTERMEDIATE);
+  }
+
+  static bool hasInfo() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::INFO);
+  }
+
+  static bool hasWarning() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::WARNING);
+  }
+
   // Enable logging to a file. Creates or overwrites the file.
   static bool setLogFile(const std::string &filename) {
     if (logFile.is_open()) {
@@ -274,3 +294,37 @@ inline LogLevel Logger::logLevel = LogLevel::INFO;
 inline std::ofstream Logger::logFile;
 inline bool Logger::logToFile = false;
 } // namespace viennacore
+
+// Macros for lazy evaluation of log messages
+#define VIENNACORE_LOG_DEBUG(msg)                                              \
+  do {                                                                         \
+    if (viennacore::Logger::hasDebug()) {                                      \
+      viennacore::Logger::getInstance().addDebug(msg).print();                 \
+    }                                                                          \
+  } while (0)
+
+#define VIENNACORE_LOG_INFO(msg)                                               \
+  do {                                                                         \
+    if (viennacore::Logger::hasInfo()) {                                       \
+      viennacore::Logger::getInstance().addInfo(msg).print();                  \
+    }                                                                          \
+  } while (0)
+
+#define VIENNACORE_LOG_WARNING(msg)                                            \
+  do {                                                                         \
+    if (viennacore::Logger::hasWarning()) {                                    \
+      viennacore::Logger::getInstance().addWarning(msg).print();               \
+    }                                                                          \
+  } while (0)
+
+#define VIENNACORE_LOG_ERROR(msg)                                              \
+  do {                                                                         \
+    viennacore::Logger::getInstance().addError(msg).print();                   \
+  } while (0)
+
+#define VIENNACORE_LOG_TIMING(msg, timer)                                      \
+  do {                                                                         \
+    if (viennacore::Logger::hasTiming()) {                                     \
+      viennacore::Logger::getInstance().addTiming(msg, timer).print();         \
+    }                                                                          \
+  } while (0)
