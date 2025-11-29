@@ -72,6 +72,26 @@ public:
 
   bool hasError() const { return error; }
 
+  static bool hasDebug() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::DEBUG);
+  }
+
+  static bool hasTiming() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::TIMING);
+  }
+
+  static bool hasIntermediate() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::INTERMEDIATE);
+  }
+
+  static bool hasInfo() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::INFO);
+  }
+
+  static bool hasWarning() {
+    return getLogLevel() >= static_cast<unsigned>(LogLevel::WARNING);
+  }
+
   // Enable logging to a file. Creates or overwrites the file.
   static bool setLogFile(const std::string &filename) {
     if (logFile.is_open()) {
