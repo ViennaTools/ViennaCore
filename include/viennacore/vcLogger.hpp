@@ -295,26 +295,24 @@ inline std::ofstream Logger::logFile;
 inline bool Logger::logToFile = false;
 } // namespace viennacore
 
+// Macros for lazy evaluation of log messages
 #define VIENNACORE_LOG_DEBUG(msg)                                              \
   do {                                                                         \
-    if (viennacore::Logger::getLogLevel() >=                                   \
-        static_cast<unsigned>(viennacore::LogLevel::DEBUG)) {                  \
+    if (viennacore::Logger::hasDebug()) {                                      \
       viennacore::Logger::getInstance().addDebug(msg).print();                 \
     }                                                                          \
   } while (0)
 
 #define VIENNACORE_LOG_INFO(msg)                                               \
   do {                                                                         \
-    if (viennacore::Logger::getLogLevel() >=                                   \
-        static_cast<unsigned>(viennacore::LogLevel::INFO)) {                   \
+    if (viennacore::Logger::hasInfo()) {                                       \
       viennacore::Logger::getInstance().addInfo(msg).print();                  \
     }                                                                          \
   } while (0)
 
 #define VIENNACORE_LOG_WARNING(msg)                                            \
   do {                                                                         \
-    if (viennacore::Logger::getLogLevel() >=                                   \
-        static_cast<unsigned>(viennacore::LogLevel::WARNING)) {                \
+    if (viennacore::Logger::hasWarning()) {                                    \
       viennacore::Logger::getInstance().addWarning(msg).print();               \
     }                                                                          \
   } while (0)
@@ -326,8 +324,7 @@ inline bool Logger::logToFile = false;
 
 #define VIENNACORE_LOG_TIMING(msg, timer)                                      \
   do {                                                                         \
-    if (viennacore::Logger::getLogLevel() >=                                   \
-        static_cast<unsigned>(viennacore::LogLevel::TIMING)) {                 \
+    if (viennacore::Logger::hasTiming()) {                                     \
       viennacore::Logger::getInstance().addTiming(msg, timer).print();         \
     }                                                                          \
   } while (0)
