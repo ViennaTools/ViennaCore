@@ -334,11 +334,7 @@ private:
 
     int axis = currentNode->axis;
 
-    // For distance comparison operations we only use the squared distance which
-    // is less compute intensive, but order preserving version of the distance
-    // function.
-    queue.enqueue(
-        std::pair{SquaredDistance(x, currentNode->value), currentNode});
+    queue.enqueue(std::pair{Distance(x, currentNode->value), currentNode});
 
     bool isLeft;
     if (x[axis] < currentNode->value[axis]) {
