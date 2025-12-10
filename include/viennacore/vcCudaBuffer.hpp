@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "vcChecks.hpp"
+#include "vcContext.hpp"
 
 namespace viennacore {
 
@@ -33,6 +34,8 @@ struct CudaBuffer {
   }
 
   template <typename T> void allocInit(size_t size, const T init) {
+    assert(!DeviceContextRegistry::getInstance().isEmpty() &&
+           "No DeviceContext registered!");
     if (d_ptr)
       free();
     sizeInBytes = size * sizeof(T);
@@ -51,6 +54,8 @@ struct CudaBuffer {
 
   // allocate to given number of bytes
   void alloc(size_t size) {
+    assert(!DeviceContextRegistry::getInstance().isEmpty() &&
+           "No DeviceContext registered!");
     if (d_ptr)
       free();
     this->sizeInBytes = size;

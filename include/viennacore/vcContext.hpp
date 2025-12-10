@@ -113,6 +113,11 @@ public:
     contexts_.clear();
   }
 
+  bool isEmpty() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return contexts_.empty();
+  }
+
 private:
   DeviceContextRegistry() = default;
   ~DeviceContextRegistry() = default;
@@ -179,9 +184,7 @@ CUmodule DeviceContext::getModule(const std::string &moduleName) {
     }
   }
   if (idx < 0) {
-    viennacore::Logger::getInstance()
-        .addError("Module " + moduleName + " not in context.")
-        .print();
+    VIENNACORE_LOG_ERROR("Module " + moduleName + " not in context.");
   }
 
   return modules[idx];
@@ -189,10 +192,8 @@ CUmodule DeviceContext::getModule(const std::string &moduleName) {
 
 void DeviceContext::addModule(const std::string &moduleName) {
   if (deviceID == -1) {
-    viennacore::Logger::getInstance()
-        .addError("Context not initialized. Use 'create' to "
-                  "initialize context.")
-        .print();
+    VIENNACORE_LOG_ERROR(
+        "Context not initialized. Use 'create' to initialize context.");
   }
 
   // Check if module already loaded
@@ -218,42 +219,36 @@ void DeviceContext::create(std::filesystem::path modulePath,
   this->modulePath = modulePath;
   this->deviceID = deviceID;
 
-  // initialize CUDA runtime API (cuda## prefix, cuda_runtime_api.h)
+  // initialize CUDA **runtime** API (cuda## prefix, cuda_runtime_api.h)
   CUDA_CHECK(Free(0));
 
   int numDevices;
   cudaGetDeviceCount(&numDevices);
   if (numDevices == 0) {
-    viennacore::Logger::getInstance()
-        .addError("No CUDA capable devices found!")
-        .print();
+    VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
   }
 
   cudaSetDevice(deviceID);
   cudaGetDeviceProperties(&deviceProps, deviceID);
-  viennacore::Logger::getInstance()
-      .addDebug("Running on device: " + std::string(deviceProps.name))
-      .print();
+  VIENNACORE_LOG_DEBUG("Registered context for device: " +
+                       std::string(deviceProps.name));
 
-  // initialize CUDA driver API (cu## prefix, cuda.h)
+  // initialize CUDA **driver** API (cu## prefix, cuda.h)
   // we need the CUDA driver API to load kernels from PTX files
   CUresult err;
   err = cuInit(0);
-  if (err != CUDA_SUCCESS)
+  if (err != CUDA_SUCCESS) {
     viennacore::Logger::getInstance().addModuleError("cuInit", err).print();
+  }
 
   err = cuCtxGetCurrent(&(cuda));
   if (err != CUDA_SUCCESS) {
-    viennacore::Logger::getInstance()
-        .addError("Error querying current context: error code " +
-                  std::to_string(err))
-        .print();
+    VIENNACORE_LOG_ERROR("Error querying current context: error code " +
+                         std::to_string(err));
   }
 
   // add default modules
-  viennacore::Logger::getInstance()
-      .addDebug("PTX kernels path: " + modulePath.string())
-      .print();
+  VIENNACORE_LOG_DEBUG("PTX kernels path: " + modulePath.string());
   // no default modules for now
 
   // initialize OptiX context
@@ -271,10 +266,9 @@ DeviceContext::createContext(std::filesystem::path modulePath,
   // Check if context already exists for this device
   if (registerInGlobal &&
       DeviceContextRegistry::getInstance().hasContext(deviceID)) {
-    viennacore::Logger::getInstance()
-        .addWarning("Context for device " + std::to_string(deviceID) +
-                    " already exists in registry. Returning existing context.")
-        .print();
+    VIENNACORE_LOG_WARNING(
+        "Context for device " + std::to_string(deviceID) +
+        " already exists in registry. Returning existing context.");
     return DeviceContextRegistry::getInstance().getContext(deviceID);
   }
 
@@ -283,10 +277,8 @@ DeviceContext::createContext(std::filesystem::path modulePath,
 
   if (registerInGlobal) {
     DeviceContextRegistry::getInstance().registerContext(deviceID, context);
-    viennacore::Logger::getInstance()
-        .addDebug("Context for device " + std::to_string(deviceID) +
-                  " registered in global registry.")
-        .print();
+    VIENNACORE_LOG_DEBUG("Context for device " + std::to_string(deviceID) +
+                         " registered in global registry.");
   }
 
   return context;

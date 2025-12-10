@@ -6,11 +6,11 @@ namespace viennacore {
 
 template <class Clock = std::chrono::high_resolution_clock> struct Timer {
   using TimePoint = typename Clock::time_point;
+  using DurationType = typename Clock::duration::rep;
 
   TimePoint start_;
-  typename Clock::duration::rep totalDuration =
-      static_cast<typename Clock::duration::rep>(0); // in ns
-  typename Clock::duration::rep currentDuration;     // in ns
+  DurationType totalDuration{};   // in ns
+  DurationType currentDuration{}; // in ns
 
   void start() { start_ = Clock::now(); }
   void finish() {
@@ -20,8 +20,8 @@ template <class Clock = std::chrono::high_resolution_clock> struct Timer {
     totalDuration += currentDuration;
   }
   void reset() {
-    currentDuration = static_cast<typename Clock::duration::rep>(0);
-    totalDuration = static_cast<typename Clock::duration::rep>(0);
+    currentDuration = static_cast<DurationType>(0);
+    totalDuration = static_cast<DurationType>(0);
   }
 };
 

@@ -74,9 +74,7 @@ public:
         }
       }
     } else {
-      Logger::getInstance()
-          .addWarning("KDTree: the provided points vector is empty.")
-          .print();
+      VIENNACORE_LOG_WARNING("KDTree: the provided points vector is empty.");
       return;
     }
   }
@@ -84,9 +82,7 @@ public:
   void setPoints(const std::vector<ValueType> &passedPoints,
                  const std::vector<NumericType> &passedScalingFactors = {}) {
     if (passedPoints.empty()) {
-      Logger::getInstance()
-          .addWarning("KDTree: the provided points vector is empty.")
-          .print();
+      VIENNACORE_LOG_WARNING("KDTree: the provided points vector is empty.");
       return;
     }
 
@@ -165,7 +161,7 @@ public:
 
   void build() {
     if (nodes.empty()) {
-      Logger::getInstance().addWarning("KDTree: No points provided!").print();
+      VIENNACORE_LOG_WARNING("KDTree: No points provided!");
       return;
     }
 

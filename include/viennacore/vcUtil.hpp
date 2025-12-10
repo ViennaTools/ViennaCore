@@ -117,8 +117,8 @@ template <typename T> std::optional<T> safeConvert(const std::string &s) {
   try {
     value = convert<T>(s);
   } catch (std::exception &) {
-    std::cout << '\'' << s << "' couldn't be converted to type  '"
-              << typeid(value).name() << "'\n";
+    VIENNACORE_LOG_WARNING("'" + s + "' couldn't be converted to type " +
+                           std::string(typeid(value).name()) + ".");
     return std::nullopt;
   }
   return {value};
@@ -148,7 +148,7 @@ parseConfigStream(std::istream &input) {
     // Extract key and value
     if (std::smatch smatch; std::regex_search(line, smatch, keyValueRegex)) {
       if (smatch.size() < 3) {
-        Logger::getInstance().addWarning("Malformed line: " + line).print();
+        VIENNACORE_LOG_WARNING("Malformed line: " + line);
         continue;
       }
 
@@ -163,7 +163,7 @@ inline std::unordered_map<std::string, std::string>
 readFile(const std::string &filename) {
   std::ifstream f(filename);
   if (!f.is_open()) {
-    std::cout << "Failed to open config file '" << filename << "'\n";
+    VIENNACORE_LOG_WARNING("Couldn't open config file: " + filename);
     return {};
   }
   return parseConfigStream(f);
@@ -188,8 +188,9 @@ public:
     try {
       value = conv(k);
     } catch (std::exception &) {
-      std::cout << '\'' << k << "' couldn't be converted to type of parameter '"
-                << key << "'\n";
+      VIENNACORE_LOG_WARNING("'" + k +
+                             "' couldn't be converted to type of parameter '" +
+                             key + "'");
     }
   }
 };
@@ -203,8 +204,8 @@ void AssignItems(std::unordered_map<std::string, std::string> &map,
     // Remove the item from the map, since it is now 'consumed'.
     map.erase(it);
   } else {
-    std::cout << "Couldn't find '" << item.key
-              << "' in parameter file. Using default value instead.\n";
+    VIENNACORE_LOG_WARNING("Couldn't find '" + item.key +
+                           "' in parameter file. Using default value instead.");
   }
 }
 
@@ -241,9 +242,7 @@ struct Parameters {
   template <typename T = double>
   [[nodiscard]] T get(const std::string &key) const {
     if (m.find(key) == m.end()) {
-      Logger::getInstance()
-          .addError("Key not found in parameters: " + key)
-          .print();
+      VIENNACORE_LOG_ERROR("Key not found in parameters: " + key);
       return T();
     }
     return convert<T>(m.at(key));

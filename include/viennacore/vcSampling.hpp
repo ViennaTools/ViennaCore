@@ -72,11 +72,9 @@ public:
     auto trimmedXValues = std::vector<NumericType>(
         xValues.begin() + minBounds[0], xValues.begin() + minBounds[1] + 1);
 
-    Logger::getInstance()
-        .addDebug("Univariate PDF support: " +
-                  std::to_string(trimmedXValues.front()) + " " +
-                  std::to_string(trimmedXValues.back()))
-        .print();
+    VIENNACORE_LOG_DEBUG(
+        "Univariate PDF support: " + std::to_string(trimmedXValues.front()) +
+        " " + std::to_string(trimmedXValues.back()));
 
     if (algo_)
       algo_.reset();
@@ -167,10 +165,9 @@ public:
     static_assert(D == 1, "D must be 1 for univariate sampling.");
     auto minBounds = getSupport(pdfValues, xValues);
 
-    Logger::getInstance()
-        .addDebug("Univariate PDF support: " + std::to_string(minBounds[0]) +
-                  " " + std::to_string(minBounds[1]))
-        .print();
+    VIENNACORE_LOG_DEBUG(
+        "Univariate PDF support: " + std::to_string(minBounds[0]) + " " +
+        std::to_string(minBounds[1]));
 
     if (algo_)
       algo_.reset();
@@ -186,12 +183,10 @@ public:
     NumericType maxValue = 0;
     auto support = getSupport(pdfValues, {xValues, yValues}, maxValue);
 
-    Logger::getInstance()
-        .addDebug("Bivariate PDF support: " + std::to_string(support[0][0]) +
-                  " " + std::to_string(support[0][1]) + "; " +
-                  std::to_string(support[1][0]) + " " +
-                  std::to_string(support[1][1]))
-        .print();
+    VIENNACORE_LOG_DEBUG(
+        "Bivariate PDF support: " + std::to_string(support[0][0]) + " " +
+        std::to_string(support[0][1]) + "; " + std::to_string(support[1][0]) +
+        " " + std::to_string(support[1][1]));
 
     if (algo_)
       algo_.reset();
@@ -252,7 +247,7 @@ private:
     }
 
     if (!foundMin) {
-      Logger::getInstance().addError("Uni-variate PDF is zero everywhere.");
+      VIENNACORE_LOG_ERROR("Uni-variate PDF is zero everywhere.");
     }
 
     // look for upper bound
