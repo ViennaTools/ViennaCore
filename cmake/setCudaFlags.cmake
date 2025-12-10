@@ -1,6 +1,6 @@
 set(CUDA_GENERATED_OUTPUT_DIR ${VIENNACORE_PTX_DIR})
 set(CUDA_MIN_SM_TARGET
-    sm_50
+    sm_60
     CACHE STRING "Minimum CUDA SM architecture to use for compilation.")
 
 # Present the CUDA_64_BIT_DEVICE_CODE on the default set of options.
