@@ -37,11 +37,11 @@ if(NOT PASSED_FIRST_CONFIGURE)
         ${CUDA_NVCC_FLAGS}
         CACHE STRING ${CUDA_NVCC_FLAGS_DESCRIPTION} FORCE)
   endif()
-  
+
   add_cuda_flag("-use_fast_math")
   add_cuda_flag("-lineinfo")
   add_cuda_flag("-expt-relaxed-constexpr")
-  add_cuda_flag("-diag-suppress 20044")
+  add_cuda_flag("-diag-suppress=20044")
   add_cuda_flag("-rdc=true") # Enable relocatable device code for separate compilation.
 
   add_cuda_flag_config(_DEBUG "-G")

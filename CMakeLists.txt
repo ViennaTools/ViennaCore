@@ -9,7 +9,7 @@ project(
 # --------------------------------------------------------------------------------------------------------
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
-option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" ON)
+option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" OFF)
 option(VIENNACORE_CUDA_LOG_DEBUG "Enable CUDA debug logging" OFF)
 
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
