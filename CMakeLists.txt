@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.7.0)
+  VERSION 1.8.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -10,6 +10,7 @@ project(
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
 option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" OFF)
+option(VIENNACORE_CUDA_LOG_DEBUG "Enable CUDA debug logging" OFF)
 
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
@@ -103,6 +104,10 @@ if(VIENNACORE_USE_GPU)
     target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
                                                          $<BUILD_INTERFACE:${CUDA_INCLUDE_DIRS}>)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${VIENNACORE_GPU_LIBS})
+
+    if(VIENNACORE_CUDA_LOG_DEBUG)
+      target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG)
+    endif()
   else()
     message(FATAL_ERROR "CUDA Toolkit not found. Cannot build GPU module.")
   endif()
