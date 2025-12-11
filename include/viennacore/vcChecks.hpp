@@ -33,6 +33,17 @@
     }                                                                          \
   }
 
+#define OPTIX_CHECK_RESULT(res)                                                \
+  {                                                                            \
+    if (res != OPTIX_SUCCESS) {                                                \
+      fprintf(stderr,                                                          \
+              "\033[1;31mOptix failed with code %d (%s: line %d): "            \
+              "%s\033[0m\n",                                                   \
+              res, __FILE__, __LINE__, optixGetErrorString(res));              \
+      exit(2);                                                                 \
+    }                                                                          \
+  }
+
 #define CUDA_SYNC_CHECK()                                                      \
   {                                                                            \
     cudaDeviceSynchronize();                                                   \
