@@ -44,21 +44,8 @@ if(NOT PASSED_FIRST_CONFIGURE)
   add_cuda_flag("-diag-suppress 20044")
   add_cuda_flag("-rdc=true") # Enable relocatable device code for separate compilation.
 
-  # CMAKE_CONFIGURATION_TYPES is only defined for multi-config build systems like
-  # MSVC and Ninja, but we need to generate flags for each configuration
-  # regardless.
-  if(DEFINED CMAKE_CONFIGURATION_TYPES)
-    set(OPTIX_CONFIGURATION_TYPES ${CMAKE_CONFIGURATION_TYPES})
-  else()
-    set(OPTIX_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo" "MinSizeRel")
-  endif()
-
-  foreach(config ${OPTIX_CONFIGURATION_TYPES})
-    if(${config} STREQUAL "Debug")
-      add_cuda_flag_config(_${config} "-G")
-      add_cuda_flag_config(_${config} "-O0")
-    endif()
-  endforeach()
+  add_cuda_flag_config(_DEBUG "-G")
+  add_cuda_flag_config(_DEBUG "-O0")
 
   if(CUDA_USE_LOCAL_ENV)
     add_cuda_flag("--use-local-env")
