@@ -54,7 +54,7 @@ namespace viennacore {
 
 static void contextLogCallback(unsigned int level, const char *tag,
                                const char *message, void *) {
-#ifndef NDEBUG
+#ifdef VIENNACORE_CUDA_LOG_DEBUG
   fprintf(stderr, "[%2d][%12s]: %s\n", (int)level, tag, message);
 #endif
 }

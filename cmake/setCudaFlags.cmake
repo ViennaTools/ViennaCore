@@ -29,22 +29,20 @@ if(NOT PASSED_FIRST_CONFIGURE)
   message(STATUS "[ViennaCore] Setting default NVCC flags for first time configuration.")
 
   set(CUDA_NVCC_FLAGS_DESCRIPTION "Semi-colon delimit multiple arguments.")
-  string(REPLACE "sm_" "compute_" CUDA_MIN_SM_COMPUTE_TARGET ${CUDA_MIN_SM_TARGET})
-
-  list(FIND CUDA_NVCC_FLAGS "-arch" index)
+  string(REPLACE "sm_" "compute_" CUDA_MIN_COMPUTE_TARGET ${CUDA_MIN_SM_TARGET})
+  list(FIND CUDA_NVCC_FLAGS "arch" index)
   if(index EQUAL -1)
-    list(APPEND CUDA_NVCC_FLAGS -arch ${CUDA_MIN_SM_TARGET})
+    list(APPEND CUDA_NVCC_FLAGS -gencode=arch=${CUDA_MIN_COMPUTE_TARGET},code=${CUDA_MIN_SM_TARGET})
     set(CUDA_NVCC_FLAGS
         ${CUDA_NVCC_FLAGS}
-        CACHE STRING "Semi-colon delimit multiple arguments." FORCE)
+        CACHE STRING ${CUDA_NVCC_FLAGS_DESCRIPTION} FORCE)
   endif()
-
-  add_cuda_flag("--use_fast_math")
+  
+  add_cuda_flag("-use_fast_math")
   add_cuda_flag("-lineinfo")
-  add_cuda_flag("--expt-relaxed-constexpr")
-  add_cuda_flag("--generate-line-info")
+  add_cuda_flag("-expt-relaxed-constexpr")
   add_cuda_flag("-diag-suppress 20044")
-  add_cuda_flag("--relocatable-device-code true")
+  add_cuda_flag("-rdc=true") # Enable relocatable device code for separate compilation.
 
   # CMAKE_CONFIGURATION_TYPES is only defined for multi-config build systems like
   # MSVC and Ninja, but we need to generate flags for each configuration
@@ -61,15 +59,6 @@ if(NOT PASSED_FIRST_CONFIGURE)
       add_cuda_flag_config(_${config} "-O0")
     endif()
   endforeach()
-
-  if(CUDA_VERSION VERSION_LESS "3.0")
-    add_cuda_flag("--keep")
-  endif()
-
-  # Some CUDA 11.x toolkits erroneously complain about sm_50 being deprecated
-  if(CUDA_VERSION VERSION_GREATER "11.0")
-    add_cuda_flag("-Wno-deprecated-gpu-targets")
-  endif()
 
   if(CUDA_USE_LOCAL_ENV)
     add_cuda_flag("--use-local-env")
