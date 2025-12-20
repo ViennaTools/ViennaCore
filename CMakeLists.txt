@@ -34,6 +34,14 @@ set_target_properties(
              CXX_STANDARD_REQUIRED ON
              WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
+if(MSVC)
+  # https://learn.microsoft.com/cpp/c-runtime-library/math-constants TODO: In case C++20 is adopted
+  # any time soon: https://cppreference.com/w/cpp/numeric/constants
+
+  target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1 NOMINMAX WIN32_LEAN_AND_MEAN)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
+endif()
+
 # --------------------------------------------------------------------------------------------------------
 # Include directories
 # --------------------------------------------------------------------------------------------------------

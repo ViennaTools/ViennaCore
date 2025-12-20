@@ -23,7 +23,7 @@
 #define STRINGIFY(X) STRINGIFY_HELPER(X)
 
 #ifndef VIENNACORE_KERNELS_PATH_DEFINE
-#define VIENNACORE_KERNELS_PATH_DEFINE
+#define VIENNACORE_KERNELS_PATH_DEFINE .
 #endif
 
 #define VIENNACORE_KERNELS_PATH STRINGIFY(VIENNACORE_KERNELS_PATH_DEFINE)
@@ -204,7 +204,8 @@ void DeviceContext::addModule(const std::string &moduleName) {
 
   CUmodule module;
   CUresult err;
-  err = cuModuleLoad(&module, (modulePath / moduleName).c_str());
+  const std::string p = (modulePath / moduleName).string(); 
+  err = cuModuleLoad(&module, p.c_str());
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError(moduleName, err).print();
 

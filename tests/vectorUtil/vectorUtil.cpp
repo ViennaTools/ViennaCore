@@ -70,7 +70,7 @@ template <typename NumericType, int D> void RunTest() {
   }
 
   VectorType<NumericType, D> vecTest;
-  std::fill(vecTest.begin(), vecTest.end(), 1.0);
+  std::fill(vecTest.begin(), vecTest.end(), NumericType(1));
 
   VectorHash<NumericType, D> hash;
   std::cout << "Hash: " << hash(vecTest) << std::endl;
