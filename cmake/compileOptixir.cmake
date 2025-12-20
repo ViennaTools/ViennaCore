@@ -40,6 +40,11 @@ function(viennacore_add_optixir target_name cu_file)
     list(APPEND nvcc_includes "-I${inc}")
   endforeach()
 
+  # Configure preprocessor definitions
+  foreach(def IN LISTS VIENNACORE_PTX_DEFINES)
+    list(APPEND nvcc_includes "-D${def}")
+  endforeach()
+
   # Allow user to provide extra NVCC flags via a cache/list variable
   # Example:
   #   set(VIENNACORE_NVCC_PTX_FLAGS --use_fast_math --expt-relaxed-constexpr)
@@ -60,7 +65,7 @@ function(viennacore_add_optixir target_name cu_file)
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_OPTIXIR_DIR}"
     COMMAND "${CMAKE_CUDA_COMPILER}" --optix-ir -std=c++17 ${arch_flag} ${VIENNACORE_NVCC_PTX_FLAGS}
-            ${VIENNACORE_PTX_DEFINES} ${nvcc_includes} "${cu_file}" -o "${optixir_out}"
+            ${nvcc_includes} "${cu_file}" -o "${optixir_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${optixir_out}" "${optixir_dst}"
     DEPENDS "${cu_file}"
     VERBATIM
