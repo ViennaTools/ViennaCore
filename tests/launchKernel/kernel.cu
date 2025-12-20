@@ -3,8 +3,8 @@
 
 #include <vcVectorType.hpp>
 
-extern "C" __global__ void test_kernel(viennacore::Vec3Df add,
-                                       viennacore::Vec3Df *results,
+extern "C" __global__ void test_kernel(viennacore::Vec3Di add,
+                                       viennacore::Vec3Di *results,
                                        unsigned numResults) {
   using namespace viennacore;
   unsigned int tidx = blockIdx.x * blockDim.x + threadIdx.x;

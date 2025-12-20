@@ -204,7 +204,7 @@ void DeviceContext::addModule(const std::string &moduleName) {
 
   CUmodule module;
   CUresult err;
-  const std::string p = (modulePath / moduleName).string(); 
+  const std::string p = (modulePath / moduleName).string();
   err = cuModuleLoad(&module, p.c_str());
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError(moduleName, err).print();

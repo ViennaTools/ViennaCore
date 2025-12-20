@@ -10,17 +10,18 @@
 #   - Creates a custom target <target_name> you can depend on
 
 function(viennacore_add_ptx target_name cu_file)
-  if (NOT DEFINED VIENNACORE_PTX_DIR OR VIENNACORE_PTX_DIR STREQUAL "")
-    message(FATAL_ERROR "VIENNACORE_PTX_DIR is not set. Set it before calling viennacore_add_ptx().")
+  if(NOT DEFINED VIENNACORE_PTX_DIR OR VIENNACORE_PTX_DIR STREQUAL "")
+    message(
+      FATAL_ERROR "VIENNACORE_PTX_DIR is not set. Set it before calling viennacore_add_ptx().")
   endif()
 
-  if (NOT EXISTS "${cu_file}")
+  if(NOT EXISTS "${cu_file}")
     message(FATAL_ERROR "viennacore_add_ptx: CUDA file not found: ${cu_file}")
   endif()
 
   # Ensure CUDA compiler is available (works even if CUDA isn't enabled globally)
   enable_language(CUDA)
-  if (NOT CMAKE_CUDA_COMPILER)
+  if(NOT CMAKE_CUDA_COMPILER)
     message(FATAL_ERROR "viennacore_add_ptx: CUDA language enabled but no CUDA compiler found.")
   endif()
 
@@ -41,7 +42,7 @@ function(viennacore_add_ptx target_name cu_file)
   # Allow user to provide extra NVCC flags via a cache/list variable
   # Example:
   #   set(VIENNACORE_NVCC_PTX_FLAGS --use_fast_math --expt-relaxed-constexpr)
-  if (NOT DEFINED VIENNACORE_NVCC_PTX_FLAGS)
+  if(NOT DEFINED VIENNACORE_NVCC_PTX_FLAGS)
     set(VIENNACORE_NVCC_PTX_FLAGS "")
   endif()
 
@@ -49,7 +50,7 @@ function(viennacore_add_ptx target_name cu_file)
   # Example:
   #   set(VIENNACORE_CUDA_ARCH "75")  # or "native" if you handle that yourself
   set(arch_flag "")
-  if (DEFINED VIENNACORE_CUDA_ARCH AND NOT VIENNACORE_CUDA_ARCH STREQUAL "")
+  if(DEFINED VIENNACORE_CUDA_ARCH AND NOT VIENNACORE_CUDA_ARCH STREQUAL "")
     set(arch_flag "-gencode=code=sm_${VIENNACORE_CUDA_ARCH},arch=compute_${VIENNACORE_CUDA_ARCH}")
   endif()
 
@@ -57,23 +58,20 @@ function(viennacore_add_ptx target_name cu_file)
     OUTPUT "${ptx_out}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_PTX_DIR}"
-    COMMAND "${CMAKE_CUDA_COMPILER}"
-            --ptx
-            -std=c++17
-            ${arch_flag}
-            ${VIENNACORE_NVCC_PTX_FLAGS}
-            ${nvcc_includes}
-            "${cu_file}"
-            -o "${ptx_out}"
+    COMMAND "${CMAKE_CUDA_COMPILER}" --ptx -std=c++17 ${arch_flag} ${VIENNACORE_NVCC_PTX_FLAGS}
+            ${nvcc_includes} "${cu_file}" -o "${ptx_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${ptx_out}" "${ptx_dst}"
     DEPENDS "${cu_file}"
     VERBATIM
-    COMMENT "Generating PTX: ${ptx_dst}"
-  )
+    COMMENT "Building NVCC PTX: ${ptx_dst}")
 
   add_custom_target(${target_name} ALL DEPENDS "${ptx_out}")
 
   # Expose paths to parent scope (handy for consumers)
-  set(${target_name}_PTX_BUILD_PATH "${ptx_out}" PARENT_SCOPE)
-  set(${target_name}_PTX_OUTPUT_PATH "${ptx_dst}" PARENT_SCOPE)
+  set(${target_name}_PTX_BUILD_PATH
+      "${ptx_out}"
+      PARENT_SCOPE)
+  set(${target_name}_PTX_OUTPUT_PATH
+      "${ptx_dst}"
+      PARENT_SCOPE)
 endfunction()
