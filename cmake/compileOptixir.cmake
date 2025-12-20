@@ -40,6 +40,13 @@ function(viennacore_add_optixir target_name cu_file)
     list(APPEND nvcc_includes "-I${inc}")
   endforeach()
 
+  # Optixir generation requires OptiX 
+  if(NOT OptiX_INCLUDE_DIR)
+    message(FATAL_ERROR
+      "viennacore_add_optixir: OptiX not found but required for optixir generation.")
+  endif()
+  list(APPEND nvcc_includes "-I${OptiX_INCLUDE_DIR}")
+
   # Configure preprocessor definitions
   foreach(def IN LISTS VIENNACORE_PTX_DEFINES)
     list(APPEND nvcc_includes "-D${def}")
