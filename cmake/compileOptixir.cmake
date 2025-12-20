@@ -1,19 +1,19 @@
-# Create a .optixir file from a .cu source and copy it to VIENNACORE_OPTIXIR_DIR.
+# Create a .optixir file from a .cu source and copy it to VIENNACORE_PTX_DIR.
 #
 # Usage:
-#   set(VIENNACORE_OPTIXIR_DIR "${CMAKE_BINARY_DIR}/optixir")  # or any path
+#   set(VIENNACORE_PTX_DIR "${CMAKE_BINARY_DIR}/optixir")  # or any path
 #   viennacore_add_optixir(my_kernel_optixir "${CMAKE_CURRENT_SOURCE_DIR}/kernel.cu")
 #
 # Result:
 #   - Builds: <binary_dir>/<target_name>.optixir
-#   - Copies to: ${VIENNACORE_OPTIXIR_DIR}/<target_name>.optixir
+#   - Copies to: ${VIENNACORE_PTX_DIR}/<target_name>.optixir
 #   - Creates a custom target <target_name> you can depend on
 
 function(viennacore_add_optixir target_name cu_file)
-  if(NOT DEFINED VIENNACORE_OPTIXIR_DIR OR VIENNACORE_OPTIXIR_DIR STREQUAL "")
+  if(NOT DEFINED VIENNACORE_PTX_DIR OR VIENNACORE_PTX_DIR STREQUAL "")
     message(
       FATAL_ERROR
-        "VIENNACORE_OPTIXIR_DIR is not set. Set it before calling viennacore_add_optixir().")
+        "VIENNACORE_PTX_DIR is not set. Set it before calling viennacore_add_optixir().")
   endif()
 
   if(NOT EXISTS "${cu_file}")
@@ -28,7 +28,7 @@ function(viennacore_add_optixir target_name cu_file)
 
   # Output PTX in the current binary dir with a stable name
   set(optixir_out "${CMAKE_CURRENT_BINARY_DIR}/${target_name}.optixir")
-  set(optixir_dst "${VIENNACORE_OPTIXIR_DIR}/${target_name}.optixir")
+  set(optixir_dst "${VIENNACORE_PTX_DIR}/${target_name}.optixir")
 
   # Gather include dirs from the directory scope (optional but useful)
   # You can also pass include dirs via target_link_libraries to an INTERFACE target and use that instead.
@@ -63,7 +63,7 @@ function(viennacore_add_optixir target_name cu_file)
   add_custom_command(
     OUTPUT "${optixir_out}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_OPTIXIR_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_PTX_DIR}"
     COMMAND "${CMAKE_CUDA_COMPILER}" --optix-ir -std=c++17 ${arch_flag} ${VIENNACORE_NVCC_PTX_FLAGS}
             ${nvcc_includes} "${cu_file}" -o "${optixir_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${optixir_out}" "${optixir_dst}"
