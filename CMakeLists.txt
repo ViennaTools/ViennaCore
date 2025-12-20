@@ -83,7 +83,7 @@ if(VIENNACORE_USE_GPU)
     message(FATAL_ERROR "CUDA Toolkit not found. Cannot build GPU module.")
   endif()
 
-  # CUDA ptx compilation setup
+  # CUDA PTX compilation setup
   set(VIENNACORE_NVCC_PTX_FLAGS
       "-use_fast_math" "-expt-relaxed-constexpr" "-rdc=true" "-lineinfo" "-diag-suppress=20044"
       CACHE STRING "NVCC flags for PTX compilation" FORCE)
@@ -103,6 +103,15 @@ if(VIENNACORE_USE_GPU)
       ${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore
       CACHE STRING "Include directories for PTX compilation" FORCE)
 
+  set(VIENNACORE_PTX_DEFINES
+      "VIENNACORE_COMPILE_GPU=1"
+      CACHE STRING "Preprocessor definitions for PTX compilation" FORCE)
+
+  set(VIENNACORE_PTX_DIR
+      "${CMAKE_BINARY_DIR}/lib/ptx"
+      CACHE STRING "Directory for compiled PTX files.")
+
+  # Find OptiX
   find_package(OptiX 8.0.0 QUIET)
 
   if(NOT OptiX_INCLUDE_DIR)
@@ -119,10 +128,6 @@ if(VIENNACORE_USE_GPU)
         CACHE PATH "Path to OptiX include directory." FORCE)
   endif()
 
-  set(VIENNACORE_PTX_DIR
-      "${CMAKE_BINARY_DIR}/lib/ptx"
-      CACHE STRING "Directory for compiled PTX files.")
-
   target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>)
   target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
@@ -135,8 +140,8 @@ if(VIENNACORE_USE_GPU)
 
   # CUDA and OptiX should now be found and configured
   message(STATUS "[ViennaCore] Enabling GPU support")
-
   include(cmake/compilePTX.cmake)
+  include(cmake/compileOptixir.cmake)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
