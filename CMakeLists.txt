@@ -15,7 +15,7 @@ option(VIENNACORE_CUDA_LOG_DEBUG "Enable CUDA debug logging" OFF)
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
 set(VIENNACORE_FORMAT_EXCLUDE
-    "build"
+    ""
     CACHE STRING "Regex to further filter formatted files")
 
 # --------------------------------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 if(VIENNACORE_USE_GPU)
-  include(cmake/CUDAUtil.cmake)
+  include(utils/CUDAUtil.cmake)
 
   # Find the CUDA Toolkit
   find_package(CUDAToolkit QUIET)
@@ -82,34 +82,6 @@ if(VIENNACORE_USE_GPU)
   else()
     message(FATAL_ERROR "CUDA Toolkit not found. Cannot build GPU module.")
   endif()
-
-  # CUDA PTX compilation setup
-  set(VIENNACORE_NVCC_PTX_FLAGS
-      "-use_fast_math" "-expt-relaxed-constexpr" "-rdc=true" "-lineinfo" "-diag-suppress=20044"
-      CACHE STRING "NVCC flags for PTX compilation" FORCE)
-
-  viennacore_detect_native_sm()
-  if(DEFINED VIENNACORE_NATIVE_SM)
-    set(VIENNACORE_CUDA_ARCH
-        ${VIENNACORE_NATIVE_SM}
-        CACHE STRING "CUDA architecture to compile for" FORCE)
-  else()
-    set(VIENNACORE_CUDA_ARCH
-        "60"
-        CACHE STRING "CUDA architecture to compile for" FORCE)
-  endif()
-
-  set(VIENNACORE_PTX_INCLUDE_DIRS
-      ${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore
-      CACHE STRING "Include directories for PTX compilation" FORCE)
-
-  set(VIENNACORE_PTX_DEFINES
-      "VIENNACORE_COMPILE_GPU=1"
-      CACHE STRING "Preprocessor definitions for PTX compilation" FORCE)
-
-  set(VIENNACORE_PTX_DIR
-      "${CMAKE_BINARY_DIR}/lib/ptx"
-      CACHE STRING "Directory for compiled PTX files.")
 
   # Find OptiX
   find_package(OptiX 8.0.0 QUIET)
@@ -128,6 +100,34 @@ if(VIENNACORE_USE_GPU)
         CACHE PATH "Path to OptiX include directory." FORCE)
   endif()
 
+  # CUDA PTX compilation setup
+  set(VIENNACORE_NVCC_PTX_FLAGS
+      "-use_fast_math" "-expt-relaxed-constexpr" "-rdc=true" "-lineinfo" "-diag-suppress=20044"
+      CACHE STRING "NVCC flags for PTX compilation")
+
+  viennacore_detect_native_sm()
+  if(DEFINED VIENNACORE_NATIVE_SM)
+    set(VIENNACORE_CUDA_ARCH
+        ${VIENNACORE_NATIVE_SM}
+        CACHE STRING "CUDA architecture to compile for")
+  else()
+    set(VIENNACORE_CUDA_ARCH
+        "60"
+        CACHE STRING "CUDA architecture to compile for")
+  endif()
+
+  set(VIENNACORE_PTX_INCLUDE_DIRS
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore ${OptiX_INCLUDE_DIR}
+      CACHE STRING "Include directories for PTX compilation")
+
+  set(VIENNACORE_PTX_DEFINES
+      "VIENNACORE_COMPILE_GPU=1"
+      CACHE STRING "Preprocessor definitions for PTX compilation")
+
+  set(VIENNACORE_PTX_DIR
+      "${CMAKE_BINARY_DIR}/lib/ptx"
+      CACHE STRING "Directory for compiled PTX files.")
+
   target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>)
   target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
@@ -135,13 +135,13 @@ if(VIENNACORE_USE_GPU)
                              INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
 
   if(VIENNACORE_CUDA_LOG_DEBUG)
-    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG=1)
   endif()
 
   # CUDA and OptiX should now be found and configured
   message(STATUS "[ViennaCore] Enabling GPU support")
-  include(cmake/compilePTX.cmake)
-  include(cmake/compileOptixir.cmake)
+  include(utils/compilePTX.cmake)
+  include(utils/compileOptixir.cmake)
 endif()
 
 # --------------------------------------------------------------------------------------------------------

@@ -12,8 +12,7 @@
 function(viennacore_add_optixir target_name cu_file)
   if(NOT DEFINED VIENNACORE_PTX_DIR OR VIENNACORE_PTX_DIR STREQUAL "")
     message(
-      FATAL_ERROR
-        "VIENNACORE_PTX_DIR is not set. Set it before calling viennacore_add_optixir().")
+      FATAL_ERROR "VIENNACORE_PTX_DIR is not set. Set it before calling viennacore_add_optixir().")
   endif()
 
   if(NOT EXISTS "${cu_file}")
@@ -39,13 +38,6 @@ function(viennacore_add_optixir target_name cu_file)
   foreach(inc IN LISTS VIENNACORE_PTX_INCLUDE_DIRS)
     list(APPEND nvcc_includes "-I${inc}")
   endforeach()
-
-  # Optixir generation requires OptiX 
-  if(NOT OptiX_INCLUDE_DIR)
-    message(FATAL_ERROR
-      "viennacore_add_optixir: OptiX not found but required for optixir generation.")
-  endif()
-  list(APPEND nvcc_includes "-I${OptiX_INCLUDE_DIR}")
 
   # Configure preprocessor definitions
   foreach(def IN LISTS VIENNACORE_PTX_DEFINES)
