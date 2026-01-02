@@ -7,22 +7,39 @@ using namespace viennacore;
 int main() {
   Logger::setLogLevel(LogLevel::DEBUG);
 
-  DeviceContext context;
-  context.create("../../../lib/ptx"); // relative to build directory
+  auto context = DeviceContext::createContext();
   const std::string moduleName = "test_kernel.ptx";
-  context.addModule(moduleName);
+  context->addModule(moduleName);
 
-	unsigned numResults = 10000;
-	CudaBuffer resultBuffer;
-	std::vector<Vec3Df> results(numResults, Vec3Df{0.0f, 0.0f, 0.0f});
-	resultBuffer.allocUpload(results);
+  unsigned numResults = 10000;
+  CudaBuffer resultBuffer;
+  std::vector<Vec3Di> results(numResults, Vec3Di{0, 0, 0});
+  resultBuffer.allocUpload(results);
 
-	auto add = Vec3Df{1.0f, 2.0f, -1.0f};
-	CUdeviceptr d_data = resultBuffer.dPointer();
-	void *kernel_args[] = {&add, &d_data, &numResults};
+  auto add = Vec3Di{1, 2, -1};
+  CUdeviceptr d_data = resultBuffer.dPointer();
+  void *kernel_args[] = {&add, &d_data, &numResults};
 
-	LaunchKernel::launch(moduleName, "test_kernel", kernel_args, context);
+  LaunchKernel::launch(moduleName, "test_kernel", kernel_args, *context);
 
-	resultBuffer.download(results.data(), numResults);
-	resultBuffer.free();
+  resultBuffer.download(results.data(), numResults);
+  resultBuffer.free();
+
+  // Verify results
+  bool allCorrect = true;
+  for (unsigned i = 0; i < numResults; ++i) {
+    if (results[i] != add) {
+      allCorrect = false;
+      std::cout << "Error at index " << i << ": got (" << results[i] << ")\n";
+      break;
+    }
+  }
+
+  if (allCorrect) {
+    std::cout << "All results are correct.\n";
+    return 0;
+  } else {
+    std::cout << "There were errors in the results.\n";
+    return 1;
+  }
 }

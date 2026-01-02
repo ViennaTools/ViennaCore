@@ -18,7 +18,8 @@
 #define TM_DEFAULT TM_RESET
 #define TM_BOLD "\033[1;1m"
 
-// These macros might be defined on some systems (MSCV), undefine them to avoid conflicts
+// These macros might be defined on some systems (MSCV), undefine them to avoid
+// conflicts
 #ifdef ERROR
 #undef ERROR
 #endif

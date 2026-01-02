@@ -31,6 +31,7 @@ endfunction()
 file(GLOB_RECURSE LIST_FILES ${WORKING_DIRECTORY}/**)
 
 list(FILTER LIST_FILES EXCLUDE REGEX "build/")
+list(FILTER LIST_FILES EXCLUDE REGEX ".venv/")
 
 if(EXCLUDE)
   message(STATUS "[Format] Excluding: ${EXCLUDE}")
