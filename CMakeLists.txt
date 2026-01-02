@@ -121,6 +121,7 @@ if(VIENNACORE_USE_GPU)
       CACHE STRING "Include directories for PTX compilation")
 
   set(VIENNACORE_PTX_DEFINES
+      "_USE_MATH_DEFINES=1"
       "VIENNACORE_COMPILE_GPU=1"
       CACHE STRING "Preprocessor definitions for PTX compilation")
 
