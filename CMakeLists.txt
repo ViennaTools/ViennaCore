@@ -120,8 +120,7 @@ if(VIENNACORE_USE_GPU)
       CACHE STRING "Include directories for NVCC compilation")
 
   set(VIENNACORE_NVCC_DEFINES
-      "_USE_MATH_DEFINES=1"
-      "VIENNACORE_COMPILE_GPU=1"
+      "_USE_MATH_DEFINES=1" "VIENNACORE_COMPILE_GPU=1"
       CACHE STRING "Preprocessor definitions for NVCC compilation")
 
   set(VIENNACORE_NVCC_PTX_DIR

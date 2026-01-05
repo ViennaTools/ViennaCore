@@ -12,7 +12,8 @@
 function(viennacore_add_optixir target_name cu_file)
   if(NOT DEFINED VIENNACORE_NVCC_PTX_DIR OR VIENNACORE_NVCC_PTX_DIR STREQUAL "")
     message(
-      FATAL_ERROR "VIENNACORE_NVCC_PTX_DIR is not set. Set it before calling viennacore_add_optixir().")
+      FATAL_ERROR
+        "VIENNACORE_NVCC_PTX_DIR is not set. Set it before calling viennacore_add_optixir().")
   endif()
 
   if(NOT EXISTS "${cu_file}")
