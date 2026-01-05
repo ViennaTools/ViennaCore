@@ -37,7 +37,6 @@ set_target_properties(
 if(MSVC)
   # https://learn.microsoft.com/cpp/c-runtime-library/math-constants TODO: In case C++20 is adopted
   # any time soon: https://cppreference.com/w/cpp/numeric/constants
-
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1 NOMINMAX
                                                        WIN32_LEAN_AND_MEAN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
@@ -72,7 +71,6 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 
 if(VIENNACORE_USE_GPU)
-  include(utils/CUDAUtil.cmake)
 
   # Find the CUDA Toolkit
   find_package(CUDAToolkit QUIET)
@@ -87,7 +85,7 @@ if(VIENNACORE_USE_GPU)
   find_package(OptiX 8.0.0 QUIET)
 
   if(NOT OptiX_INCLUDE_DIR)
-    # If OptiX not found, download it using CPM
+    # If OptiX is not found, download it using CPM
     CPMAddPackage(
       NAME OptiX
       VERSION 8.0.0
@@ -101,10 +99,11 @@ if(VIENNACORE_USE_GPU)
   endif()
 
   # CUDA PTX compilation setup
-  set(VIENNACORE_NVCC_PTX_FLAGS
+  set(VIENNACORE_NVCC_FLAGS
       "-use_fast_math" "-expt-relaxed-constexpr" "-rdc=true" "-lineinfo" "-diag-suppress=20044"
-      CACHE STRING "NVCC flags for PTX compilation")
+      CACHE STRING "NVCC flags for NVCC compilation")
 
+  include(utils/CUDAUtil.cmake)
   viennacore_detect_native_sm()
   if(DEFINED VIENNACORE_NATIVE_SM)
     set(VIENNACORE_CUDA_ARCH
@@ -116,25 +115,24 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "CUDA architecture to compile for")
   endif()
 
-  set(VIENNACORE_PTX_INCLUDE_DIRS
+  set(VIENNACORE_NVCC_INCLUDE_DIRS
       ${CMAKE_CURRENT_SOURCE_DIR}/include/viennacore ${OptiX_INCLUDE_DIR}
-      CACHE STRING "Include directories for PTX compilation")
+      CACHE STRING "Include directories for NVCC compilation")
 
-  set(VIENNACORE_PTX_DEFINES
+  set(VIENNACORE_NVCC_DEFINES
       "_USE_MATH_DEFINES=1"
       "VIENNACORE_COMPILE_GPU=1"
-      CACHE STRING "Preprocessor definitions for PTX compilation")
+      CACHE STRING "Preprocessor definitions for NVCC compilation")
 
-  set(VIENNACORE_PTX_DIR
+  set(VIENNACORE_NVCC_PTX_DIR
       "${CMAKE_BINARY_DIR}/lib/ptx"
-      CACHE STRING "Directory for compiled PTX files.")
+      CACHE STRING "Directory for compiled PTX/optixir files.")
 
   target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>)
   target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
   target_compile_definitions(${PROJECT_NAME}
-                             INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_PTX_DIR})
-
+                             INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_NVCC_PTX_DIR})
   if(VIENNACORE_CUDA_LOG_DEBUG)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG=1)
   endif()
