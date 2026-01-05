@@ -18,6 +18,21 @@
 #define TM_DEFAULT TM_RESET
 #define TM_BOLD "\033[1;1m"
 
+// These macros might be defined on some systems (MSCV), undefine them to avoid
+// conflicts
+#ifdef ERROR
+#undef ERROR
+#endif
+#ifdef WARNING
+#undef WARNING
+#endif
+#ifdef INFO
+#undef INFO
+#endif
+#ifdef DEBUG
+#undef DEBUG
+#endif
+
 namespace viennacore {
 // verbosity levels:
 // 0 errors

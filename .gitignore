@@ -1,8 +1,11 @@
 .vscode/
+.vs/
+out/
 build*
 *_old.*
 .idea/
 cmake-build*
+CMakeSettings.json
 
 # Prerequisites
 *.d

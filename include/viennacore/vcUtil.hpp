@@ -29,6 +29,13 @@
 
 #define __both__ __vc_host __vc_device
 
+#ifndef M_PIf
+#define M_PIf 3.141592653589793238462643383279502884e+00F
+#endif
+#ifndef M_PI_2f
+#define M_PI_2f 1.570796326794896619231321691639751442e+00F
+#endif
+
 namespace viennacore {
 
 #ifdef __CUDACC__

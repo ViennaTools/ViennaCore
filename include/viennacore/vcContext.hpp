@@ -22,11 +22,22 @@
 #define STRINGIFY_HELPER(X) #X
 #define STRINGIFY(X) STRINGIFY_HELPER(X)
 
+#ifdef VIENNACORE_KERNELS_PATH_OVERRIDE
+#define VIENNACORE_KERNELS_PATH STRINGIFY(VIENNACORE_KERNELS_PATH_OVERRIDE)
+#else
 #ifndef VIENNACORE_KERNELS_PATH_DEFINE
-#define VIENNACORE_KERNELS_PATH_DEFINE
+#define VIENNACORE_KERNELS_PATH_DEFINE .
+#endif
+#define VIENNACORE_KERNELS_PATH STRINGIFY(VIENNACORE_KERNELS_PATH_DEFINE)
 #endif
 
-#define VIENNACORE_KERNELS_PATH STRINGIFY(VIENNACORE_KERNELS_PATH_DEFINE)
+#ifdef VIENNACORE_DYNAMIC_MODULE_PATH
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+#endif
 
 namespace viennacore {
 
@@ -204,7 +215,8 @@ void DeviceContext::addModule(const std::string &moduleName) {
 
   CUmodule module;
   CUresult err;
-  err = cuModuleLoad(&module, (modulePath / moduleName).c_str());
+  const std::string p = (modulePath / moduleName).string();
+  err = cuModuleLoad(&module, p.c_str());
   if (err != CUDA_SUCCESS)
     viennacore::Logger::getInstance().addModuleError(moduleName, err).print();
 
@@ -271,6 +283,25 @@ DeviceContext::createContext(std::filesystem::path modulePath,
         " already exists in registry. Returning existing context.");
     return DeviceContextRegistry::getInstance().getContext(deviceID);
   }
+
+#ifdef VIENNACORE_DYNAMIC_MODULE_PATH
+// If a dynamic modules path is specified (at build or runtime), adjust the
+// modulePath to be relative to the current module's location
+#ifdef _WIN32
+  HMODULE hModule = GetModuleHandle(NULL);
+  char path[MAX_PATH];
+  GetModuleFileNameA(hModule, path, MAX_PATH);
+  std::filesystem::path mPath = std::filesystem::path(path).parent_path();
+  modulePath = mPath / modulePath;
+#else
+  Dl_info info;
+  // Get the address of this function to locate our own module
+  if (dladdr((void *)&createContext, &info) && info.dli_fname) {
+    auto mPath = std::filesystem::path(info.dli_fname).parent_path();
+    modulePath = mPath / modulePath;
+  }
+#endif
+#endif
 
   auto context = std::make_shared<DeviceContext>();
   context->create(modulePath, deviceID);
