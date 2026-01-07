@@ -4,7 +4,9 @@
 #include <cuda_runtime.h>
 
 // this include may only appear in a single source file:
+#ifndef VIENNACORE_COMPILE_SHARED_LIB
 #include <optix_function_table_definition.h>
+#endif
 #include <optix_stubs.h>
 
 #include <algorithm>
@@ -186,7 +188,7 @@ struct DeviceContext {
   int deviceID = -1;
 };
 
-CUmodule DeviceContext::getModule(const std::string &moduleName) {
+inline CUmodule DeviceContext::getModule(const std::string &moduleName) {
   int idx = -1;
   for (int i = 0; i < modules.size(); i++) {
     if (this->moduleNames[i] == moduleName) {
@@ -201,7 +203,7 @@ CUmodule DeviceContext::getModule(const std::string &moduleName) {
   return modules[idx];
 }
 
-void DeviceContext::addModule(const std::string &moduleName) {
+inline void DeviceContext::addModule(const std::string &moduleName) {
   if (deviceID == -1) {
     VIENNACORE_LOG_ERROR(
         "Context not initialized. Use 'create' to initialize context.");
@@ -224,8 +226,8 @@ void DeviceContext::addModule(const std::string &moduleName) {
   moduleNames.push_back(moduleName);
 }
 
-void DeviceContext::create(std::filesystem::path modulePath,
-                           const int deviceID) {
+inline void DeviceContext::create(std::filesystem::path modulePath,
+                                  const int deviceID) {
 
   // create new context
   this->modulePath = modulePath;
@@ -271,7 +273,7 @@ void DeviceContext::create(std::filesystem::path modulePath,
 }
 
 // Static factory method implementations
-std::shared_ptr<DeviceContext>
+inline std::shared_ptr<DeviceContext>
 DeviceContext::createContext(std::filesystem::path modulePath,
                              const int deviceID, bool registerInGlobal) {
 
@@ -315,16 +317,16 @@ DeviceContext::createContext(std::filesystem::path modulePath,
   return context;
 }
 
-std::shared_ptr<DeviceContext>
+inline std::shared_ptr<DeviceContext>
 DeviceContext::getContextFromRegistry(int deviceID) {
   return DeviceContextRegistry::getInstance().getContext(deviceID);
 }
 
-bool DeviceContext::hasContextInRegistry(int deviceID) {
+inline bool DeviceContext::hasContextInRegistry(int deviceID) {
   return DeviceContextRegistry::getInstance().hasContext(deviceID);
 }
 
-std::vector<int> DeviceContext::getRegisteredDeviceIDs() {
+inline std::vector<int> DeviceContext::getRegisteredDeviceIDs() {
   return DeviceContextRegistry::getInstance().getRegisteredDeviceIDs();
 }
 
