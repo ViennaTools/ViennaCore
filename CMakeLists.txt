@@ -61,9 +61,11 @@ CPMAddPackage(
   VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
+set(VIENNACORE_DEPENDENCIES "")
 if(VIENNACORE_USE_OPENMP)
   find_package(OpenMP REQUIRED)
   target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
+  list(APPEND VIENNACORE_DEPENDENCIES OpenMP)
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -77,6 +79,7 @@ if(VIENNACORE_USE_GPU)
 
   if(CUDAToolkit_FOUND)
     enable_language(CUDA)
+    list(APPEND VIENNACORE_DEPENDENCIES CUDAToolkit)
   else()
     message(FATAL_ERROR "CUDA Toolkit not found. Cannot build GPU module.")
   endif()
@@ -90,9 +93,6 @@ if(VIENNACORE_USE_GPU)
       NAME OptiX
       VERSION 8.0.0
       GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
-    set(OptiX_INSTALL_DIR
-        ${CPM_PACKAGE_OptiX_SOURCE_DIR}
-        CACHE PATH "Path to OptiX installation" FORCE)
     set(OptiX_INCLUDE_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}/include
         CACHE PATH "Path to OptiX include directory." FORCE)
@@ -127,11 +127,22 @@ if(VIENNACORE_USE_GPU)
       "${CMAKE_BINARY_DIR}/lib/ptx"
       CACHE STRING "Directory for compiled PTX/optixir files.")
 
-  target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>)
+  # Handle OptiX include directories (build-only if from CPM, otherwise installed)
+  if(OptiX_INCLUDE_DIR MATCHES "^${CMAKE_BINARY_DIR}")
+    # OptiX downloaded via CPM: install headers and use install interface
+    install(DIRECTORY ${OptiX_INCLUDE_DIR}/ DESTINATION include/viennacore-${PROJECT_VERSION}/optix)
+    target_include_directories(${PROJECT_NAME} INTERFACE
+      $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
+      $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}/optix>)
+  else()
+    # OptiX found via system or OptiX_INSTALL_DIR: use as-is for both interfaces
+    target_include_directories(${PROJECT_NAME} INTERFACE ${OptiX_INCLUDE_DIR})
+  endif()
   target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
-  target_compile_definitions(${PROJECT_NAME}
-                             INTERFACE VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_NVCC_PTX_DIR})
+  target_compile_definitions(${PROJECT_NAME} INTERFACE
+    $<BUILD_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_NVCC_PTX_DIR}>
+    $<INSTALL_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${CMAKE_INSTALL_PREFIX}/lib/ptx>)
   if(VIENNACORE_CUDA_LOG_DEBUG)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG=1)
   endif()
@@ -176,4 +187,5 @@ packageProject(
   BINARY_DIR ${PROJECT_BINARY_DIR}
   INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include/viennacore
   INCLUDE_DESTINATION include/viennacore-${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion)
+  COMPATIBILITY SameMajorVersion
+  DEPENDENCIES ${VIENNACORE_DEPENDENCIES})
