@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.9.0)
+  VERSION 1.9.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -85,13 +85,14 @@ if(VIENNACORE_USE_GPU)
   endif()
 
   # Find OptiX
-  find_package(OptiX 8.0.0 QUIET)
+  set(OptiX_VERSION 8.0.0)
+  find_package(OptiX ${OptiX_VERSION} QUIET)
 
   if(NOT OptiX_INCLUDE_DIR)
     # If OptiX is not found, download it using CPM
     CPMAddPackage(
       NAME OptiX
-      VERSION 8.0.0
+      VERSION ${OptiX_VERSION}
       GIT_REPOSITORY "https://github.com/NVIDIA/optix-dev")
     set(OptiX_INCLUDE_DIR
         ${CPM_PACKAGE_OptiX_SOURCE_DIR}/include
@@ -130,10 +131,10 @@ if(VIENNACORE_USE_GPU)
   # Handle OptiX include directories (build-only if from CPM, otherwise installed)
   if(OptiX_INCLUDE_DIR MATCHES "^${CMAKE_BINARY_DIR}")
     # OptiX downloaded via CPM: install headers and use install interface
-    install(DIRECTORY ${OptiX_INCLUDE_DIR}/ DESTINATION include/viennacore-${PROJECT_VERSION}/optix)
+    install(DIRECTORY ${OptiX_INCLUDE_DIR}/ DESTINATION include/optix-${OptiX_VERSION})
     target_include_directories(${PROJECT_NAME} INTERFACE
       $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
-      $<INSTALL_INTERFACE:include/viennacore-${PROJECT_VERSION}/optix>)
+      $<INSTALL_INTERFACE:include/optix-${OptiX_VERSION}>)
   else()
     # OptiX found via system or OptiX_INSTALL_DIR: use as-is for both interfaces
     target_include_directories(${PROJECT_NAME} INTERFACE ${OptiX_INCLUDE_DIR})
