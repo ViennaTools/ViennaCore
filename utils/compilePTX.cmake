@@ -3,6 +3,9 @@
 # Usage:
 #   set(VIENNACORE_NVCC_PTX_DIR "${CMAKE_BINARY_DIR}/ptx")  # or any path
 #   viennacore_add_ptx(my_kernel_ptx "${CMAKE_CURRENT_SOURCE_DIR}/kernel.cu")
+#   # Or with additional dependencies:
+#   viennacore_add_ptx(my_kernel_ptx "${CMAKE_CURRENT_SOURCE_DIR}/kernel.cu"
+#                      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/header.h" "${CMAKE_CURRENT_SOURCE_DIR}/config.h")
 #
 # Result:
 #   - Builds: <binary_dir>/<target_name>.ptx
@@ -10,6 +13,13 @@
 #   - Creates a custom target <target_name> you can depend on
 
 function(viennacore_add_ptx target_name cu_file)
+  # Parse optional DEPENDS argument
+  set(options)
+  set(oneValueArgs)
+  set(multiValueArgs DEPENDS)
+  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  set(additional_deps ${ARG_DEPENDS})
   if(NOT DEFINED VIENNACORE_NVCC_PTX_DIR OR VIENNACORE_NVCC_PTX_DIR STREQUAL "")
     message(
       FATAL_ERROR "VIENNACORE_NVCC_PTX_DIR is not set. Set it before calling viennacore_add_ptx().")
@@ -66,7 +76,7 @@ function(viennacore_add_ptx target_name cu_file)
     COMMAND "${CMAKE_CUDA_COMPILER}" --ptx -std=c++17 ${arch_flag} ${VIENNACORE_NVCC_FLAGS}
             ${nvcc_includes} "${cu_file}" -o "${ptx_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${ptx_out}" "${ptx_dst}"
-    DEPENDS "${cu_file}"
+    DEPENDS "${cu_file}" ${additional_deps}
     VERBATIM
     COMMENT "Building NVCC PTX: ${ptx_dst}")
 

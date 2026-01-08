@@ -132,18 +132,19 @@ if(VIENNACORE_USE_GPU)
   if(OptiX_INCLUDE_DIR MATCHES "^${CMAKE_BINARY_DIR}")
     # OptiX downloaded via CPM: install headers and use install interface
     install(DIRECTORY ${OptiX_INCLUDE_DIR}/ DESTINATION include/optix-${OptiX_VERSION})
-    target_include_directories(${PROJECT_NAME} INTERFACE
-      $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
-      $<INSTALL_INTERFACE:include/optix-${OptiX_VERSION}>)
+    target_include_directories(
+      ${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${OptiX_INCLUDE_DIR}>
+                                $<INSTALL_INTERFACE:include/optix-${OptiX_VERSION}>)
   else()
     # OptiX found via system or OptiX_INSTALL_DIR: use as-is for both interfaces
     target_include_directories(${PROJECT_NAME} INTERFACE ${OptiX_INCLUDE_DIR})
   endif()
   target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
-  target_compile_definitions(${PROJECT_NAME} INTERFACE
-    $<BUILD_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_NVCC_PTX_DIR}>
-    $<INSTALL_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${CMAKE_INSTALL_PREFIX}/lib/ptx>)
+  target_compile_definitions(
+    ${PROJECT_NAME}
+    INTERFACE $<BUILD_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${VIENNACORE_NVCC_PTX_DIR}>
+              $<INSTALL_INTERFACE:VIENNACORE_KERNELS_PATH_DEFINE=${CMAKE_INSTALL_PREFIX}/lib/ptx>)
   if(VIENNACORE_CUDA_LOG_DEBUG)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_CUDA_LOG_DEBUG=1)
   endif()
