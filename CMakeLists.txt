@@ -121,7 +121,7 @@ if(VIENNACORE_USE_GPU)
         CACHE STRING "CUDA architecture to compile for")
   else()
     set(VIENNACORE_CUDA_ARCH
-        "60"
+        "75"
         CACHE STRING "CUDA architecture to compile for")
   endif()
 
