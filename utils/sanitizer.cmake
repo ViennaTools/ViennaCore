@@ -7,7 +7,7 @@ function(viennacore_enable_sanitizer)
       # GCC / Clang
       -fsanitize=undefined
       -fsanitize=address
-      -fsanitize=thread
+      # -fsanitize=thread
       # Clang
       -fsanitize=memory
       # GCC

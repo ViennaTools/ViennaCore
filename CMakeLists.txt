@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.9.1)
+  VERSION 1.9.3)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -10,7 +10,9 @@ project(
 
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
 option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" OFF)
+option(VIENNACORE_ENABLE_SANITIZER "Enable Sanitizers" OFF)
 option(VIENNACORE_CUDA_LOG_DEBUG "Enable CUDA debug logging" OFF)
+option(VIENNACORE_CUDA_USE_NATIVE_SM "Compile CUDA code for native SM architecture" OFF)
 
 option(VIENNACORE_BUILD_TESTS "Build tests" OFF)
 
@@ -39,7 +41,12 @@ if(MSVC)
   # any time soon: https://cppreference.com/w/cpp/numeric/constants
   target_compile_definitions(${PROJECT_NAME} INTERFACE _USE_MATH_DEFINES=1 NOMINMAX
                                                        WIN32_LEAN_AND_MEAN)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -openmp:llvm /bigobj")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp:llvm /bigobj")
+endif()
+
+if (VIENNACORE_ENABLE_SANITIZER)
+  include(utils/sanitizer.cmake)
+  viennacore_enable_sanitizer()
 endif()
 
 # --------------------------------------------------------------------------------------------------------
@@ -105,7 +112,9 @@ if(VIENNACORE_USE_GPU)
       CACHE STRING "NVCC flags for NVCC compilation")
 
   include(utils/CUDAUtil.cmake)
-  viennacore_detect_native_sm()
+  if (VIENNACORE_CUDA_USE_NATIVE_SM)
+    viennacore_detect_native_sm()
+  endif()
   if(DEFINED VIENNACORE_NATIVE_SM)
     set(VIENNACORE_CUDA_ARCH
         ${VIENNACORE_NATIVE_SM}
