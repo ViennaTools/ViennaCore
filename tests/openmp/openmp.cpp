@@ -7,5 +7,5 @@ int main() {
 #pragma omp atomic
     sum += 1;
   }
-  return sum;
+  return sum > 0 ? 0 : 1;
 }

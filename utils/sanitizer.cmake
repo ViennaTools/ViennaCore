@@ -1,32 +1,23 @@
 function(viennacore_enable_sanitizer)
-  include(CheckCompilerFlag)
   include(CheckLinkerFlag)
 
-  set(VIENNACORE_SANITIZER_CANDIDATES
-      -fno-omit-frame-pointer
-      # GCC / Clang
-      -fsanitize=undefined
-      -fsanitize=address
-      # -fsanitize=thread
-      # Clang
-      -fsanitize=memory
-      # GCC
-      -fsanitize=leak
-      # MSVC
-      /fsanitize=address)
+  add_compile_options(-fno-omit-frame-pointer)
 
-  foreach(flag IN LISTS VIENNACORE_SANITIZER_CANDIDATES)
-    list(FIND VIENNACORE_SANITIZER_CANDIDATES "${flag}" INDEX)
+  if(MSVC)
+    set(flags "/fsanitize=address" "/fsanitize=undefined")
+  else()
+    set(flags "-fsanitize=address" "-fsanitize=undefined")
+  endif()
 
-    check_linker_flag(CXX ${flag} VIENNACORE_LINKER_FLAG_${INDEX})
-    check_compiler_flag(CXX ${flag} VIENNACORE_COMPILER_FLAG_${INDEX})
+  foreach(flag IN LISTS flags)
+    string(MAKE_C_IDENTIFIER "${flag}" flag_id)
+    check_linker_flag(CXX "${flag}" "VIENNACORE_LINKER_${flag_id}")
 
-    if(VIENNACORE_LINKER_FLAG_${INDEX})
-      add_link_options(${flag})
-    endif()
-
-    if(VIENNACORE_COMPILER_FLAG_${INDEX})
-      add_compile_options(${flag})
+    if(NOT VIENNACORE_LINKER_${flag_id})
+      message(WARNING "Sanitizer flag '${flag}' linker check failed.")
+    else()
+      add_compile_options("${flag}")
+      add_link_options("${flag}")
     endif()
   endforeach()
 
