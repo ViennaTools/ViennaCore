@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cuda.h>
-#include <cuda_runtime.h>
 
 // this include may only appear in a single source file:
 #ifndef VIENNACORE_COMPILE_SHARED_LIB
@@ -159,7 +158,7 @@ struct DeviceContext {
   CUmodule getModule(const std::string &moduleName);
   void addModule(const std::string &moduleName);
   std::string getModulePath() const { return modulePath.string(); }
-  std::string getDeviceName() const { return deviceProps.name; }
+  std::string getDeviceName() const { return deviceName; }
   int getDeviceID() const { return deviceID; }
 
   void destroy() {
@@ -183,7 +182,7 @@ struct DeviceContext {
   std::vector<CUmodule> modules;
 
   CUcontext cuda;
-  cudaDeviceProp deviceProps;
+  std::string deviceName;
   OptixDeviceContext optix;
   int deviceID = -1;
 };
@@ -216,11 +215,8 @@ inline void DeviceContext::addModule(const std::string &moduleName) {
   }
 
   CUmodule module;
-  CUresult err;
   const std::string p = (modulePath / moduleName).string();
-  err = cuModuleLoad(&module, p.c_str());
-  if (err != CUDA_SUCCESS)
-    viennacore::Logger::getInstance().addModuleError(moduleName, err).print();
+  CUDA_CHECK(cuModuleLoad(&module, p.c_str()));
 
   modules.push_back(module);
   moduleNames.push_back(moduleName);
@@ -233,33 +229,26 @@ inline void DeviceContext::create(std::filesystem::path modulePath,
   this->modulePath = modulePath;
   this->deviceID = deviceID;
 
-  // initialize CUDA **runtime** API (cuda## prefix, cuda_runtime_api.h)
-  CUDA_CHECK(Free(0));
+  // initialize CUDA **driver** API (cu## prefix, cuda.h)
+  CUDA_CHECK(cuInit(0));
 
   int numDevices;
-  cudaGetDeviceCount(&numDevices);
+  CUDA_CHECK(cuDeviceGetCount(&numDevices));
   if (numDevices == 0) {
     VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
   }
 
-  cudaSetDevice(deviceID);
-  cudaGetDeviceProperties(&deviceProps, deviceID);
-  VIENNACORE_LOG_DEBUG("Registered context for device: " +
-                       std::string(deviceProps.name));
+  CUdevice device;
+  CUDA_CHECK(cuDeviceGet(&device, deviceID));
 
-  // initialize CUDA **driver** API (cu## prefix, cuda.h)
-  // we need the CUDA driver API to load kernels from PTX files
-  CUresult err;
-  err = cuInit(0);
-  if (err != CUDA_SUCCESS) {
-    viennacore::Logger::getInstance().addModuleError("cuInit", err).print();
-  }
+  // Get device name
+  char deviceNameBuffer[256];
+  CUDA_CHECK(cuDeviceGetName(deviceNameBuffer, 256, device));
+  deviceName = deviceNameBuffer;
+  VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
 
-  err = cuCtxGetCurrent(&(cuda));
-  if (err != CUDA_SUCCESS) {
-    VIENNACORE_LOG_ERROR("Error querying current context: error code " +
-                         std::to_string(err));
-  }
+  // Create CUDA device context
+  CUDA_CHECK(cuCtxCreate(&cuda, 0, device));
 
   // add default modules
   VIENNACORE_LOG_DEBUG("PTX kernels path: " + modulePath.string());
