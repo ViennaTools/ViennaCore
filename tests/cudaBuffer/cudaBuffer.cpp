@@ -28,7 +28,6 @@ int main() {
   buffer2.download(test2.data(), 10);
 
   for (int i = 0; i < test2.size(); i++) {
-    std::cout << "test2[" << i << "] = " << test2[i] << std::endl;
     VC_TEST_ASSERT(test2[i] == 42.0);
   }
 
