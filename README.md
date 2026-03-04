@@ -27,4 +27,6 @@ http://www.iue.tuwien.ac.at/
 
 ## License
 
+Versions < 2.0.0 were released under MIT.
+Starting with version 2.0.0 the project is licensed under GPL-3.0.
 See file LICENSE in the base directory.
