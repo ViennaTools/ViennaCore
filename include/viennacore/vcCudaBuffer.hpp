@@ -2,7 +2,7 @@
 
 #ifdef VIENNACORE_COMPILE_GPU
 
-#include <cuda_runtime.h>
+#include <cuda.h>
 
 #include <cassert>
 #include <cstddef>
@@ -39,17 +39,21 @@ struct CudaBuffer {
     if (d_ptr)
       free();
     sizeInBytes = size * sizeof(T);
-    CUDA_CHECK(Malloc((void **)&d_ptr, sizeInBytes));
+    cuMemAlloc((CUdeviceptr *)&d_ptr, sizeInBytes);
 #ifndef NDEBUG
     allocFreeCount++;
 #endif
-    CUDA_CHECK(Memset(d_ptr, init, sizeInBytes));
+    // Create host buffer filled with init value and copy to device
+    std::vector<T> initBuffer(size, init);
+    cuMemcpyHtoD((CUdeviceptr)d_ptr, initBuffer.data(), sizeInBytes);
   }
 
   template <typename T> void set(size_t count, const T init) {
     assert(d_ptr != nullptr);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(Memset(d_ptr, init, sizeInBytes));
+    // Create host buffer filled with init value and copy to device
+    std::vector<T> initBuffer(count, init);
+    cuMemcpyHtoD((CUdeviceptr)d_ptr, initBuffer.data(), sizeInBytes);
   }
 
   // allocate to given number of bytes
@@ -59,7 +63,7 @@ struct CudaBuffer {
     if (d_ptr)
       free();
     this->sizeInBytes = size;
-    CUDA_CHECK(Malloc((void **)&d_ptr, sizeInBytes));
+    cuMemAlloc((CUdeviceptr *)&d_ptr, sizeInBytes);
 #ifndef NDEBUG
     allocFreeCount++;
 #endif
@@ -71,7 +75,7 @@ struct CudaBuffer {
       assert(sizeInBytes == 0);
       return;
     }
-    CUDA_CHECK(Free(d_ptr));
+    cuMemFree((CUdeviceptr)d_ptr);
 #ifndef NDEBUG
     allocFreeCount--;
 #endif
@@ -92,15 +96,13 @@ struct CudaBuffer {
   template <typename T> void upload(const T *t, size_t count) {
     assert(d_ptr != nullptr);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(
-        Memcpy(d_ptr, (void *)t, count * sizeof(T), cudaMemcpyHostToDevice));
+    cuMemcpyHtoD((CUdeviceptr)d_ptr, (void *)t, count * sizeof(T));
   }
 
   template <typename T> void download(T *t, size_t count) {
     assert(d_ptr != nullptr);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(
-        Memcpy((void *)t, d_ptr, count * sizeof(T), cudaMemcpyDeviceToHost));
+    cuMemcpyDtoH((void *)t, (CUdeviceptr)d_ptr, count * sizeof(T));
   }
 
   size_t sizeInBytes{0};

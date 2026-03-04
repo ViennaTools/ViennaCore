@@ -7,8 +7,7 @@ int main() {
   using namespace viennacore;
   Logger::setLogLevel(LogLevel::DEBUG);
 
-  DeviceContext context;
-  context.create(); // necessary to initialize CUDA
+  auto context = DeviceContext::createContext();
 
   CudaBuffer buffer;
 
@@ -22,6 +21,16 @@ int main() {
     VC_TEST_ASSERT(test[i] == data[i]);
   }
 
+  double init = 42.0;
+  CudaBuffer buffer2;
+  buffer2.allocInit(10, init);
+  std::vector<decltype(init)> test2(10);
+  buffer2.download(test2.data(), 10);
+
+  for (int i = 0; i < test2.size(); i++) {
+    VC_TEST_ASSERT(test2[i] == 42.0);
+  }
+
   buffer.free();
-  context.destroy();
+  buffer2.free();
 }

@@ -1,6 +1,3 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
-
 #include <vcVectorType.hpp>
 
 extern "C" __global__ void test_kernel(viennacore::Vec3Di add,

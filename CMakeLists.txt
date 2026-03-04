@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 1.9.3)
+  VERSION 1.10.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -148,7 +148,7 @@ if(VIENNACORE_USE_GPU)
     # OptiX found via system or OptiX_INSTALL_DIR: use as-is for both interfaces
     target_include_directories(${PROJECT_NAME} INTERFACE ${OptiX_INCLUDE_DIR})
   endif()
-  target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver CUDA::cudart)
+  target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver)
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
   target_compile_definitions(
     ${PROJECT_NAME}
