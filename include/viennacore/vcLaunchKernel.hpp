@@ -2,7 +2,6 @@
 
 #ifdef VIENNACORE_COMPILE_GPU
 
-#include <cuda.h>
 #include <string>
 
 #include "vcContext.hpp"
@@ -19,24 +18,16 @@ public:
 
     CUmodule module = context.getModule(moduleName);
     CUfunction function;
-
-    CUresult err = cuModuleGetFunction(&function, module, kernelName.data());
-    if (err != CUDA_SUCCESS)
-      Logger::getInstance()
-          .addFunctionError(std::string(kernelName), err)
-          .print();
-
-    err = cuLaunchKernel(function,              // function to call
-                         blocks, 1, 1,          /* grid dims */
-                         threadsPerBlock, 1, 1, /* block dims */
-                         sharedMemoryInBytes * threadsPerBlock, // shared memory
-                         0,                                     // stream
-                         kernel_args, // kernel parameters
-                         nullptr);
-    if (err != CUDA_SUCCESS)
-      Logger::getInstance()
-          .addLaunchError(std::string(kernelName), err)
-          .print();
+    context.ch.call("cuModuleGetFunction", &function, module,
+                    kernelName.data());
+    context.ch.call("cuLaunchKernel",
+                    function,                              // function to call
+                    blocks, 1, 1,                          /* grid dims */
+                    threadsPerBlock, 1, 1,                 /* block dims */
+                    sharedMemoryInBytes * threadsPerBlock, // shared memory
+                    0,                                     // stream
+                    kernel_args,                           // kernel parameters
+                    nullptr);
   }
 
   static void launchSingle(const std::string &moduleName,
@@ -46,20 +37,16 @@ public:
 
     CUmodule module = context.getModule(moduleName);
     CUfunction function;
-
-    CUresult err = cuModuleGetFunction(&function, module, kernelName.data());
-    if (err != CUDA_SUCCESS)
-      Logger::getInstance().addFunctionError(kernelName, err).print();
-
-    err = cuLaunchKernel(function,            // function to call
-                         1, 1, 1,             /* grid dims */
-                         1, 1, 1,             /* block dims */
-                         sharedMemoryInBytes, // shared memory
-                         0,                   // stream
-                         kernel_args,         // kernel parameters
-                         nullptr);
-    if (err != CUDA_SUCCESS)
-      Logger::getInstance().addLaunchError(kernelName, err).print();
+    context.ch.call("cuModuleGetFunction", &function, module,
+                    kernelName.data());
+    context.ch.call("cuLaunchKernel",
+                    function,            // function to call
+                    1, 1, 1,             /* grid dims */
+                    1, 1, 1,             /* block dims */
+                    sharedMemoryInBytes, // shared memory
+                    0,                   // stream
+                    kernel_args,         // kernel parameters
+                    nullptr);
   }
 
   static constexpr int blocks = 512;

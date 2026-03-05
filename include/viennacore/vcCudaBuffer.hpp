@@ -15,6 +15,16 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
+  CudaBuffer() {
+    assert(!DeviceContextRegistry::getInstance().isEmpty() &&
+           "No DeviceContext registered!");
+    context = DeviceContext::getContextFromRegistry(0);
+  }
+
+  CudaBuffer(std::shared_ptr<DeviceContext> context) : context(context) {
+    assert(context != nullptr && "Context cannot be null!");
+  }
+
 #ifndef NDEBUG
   ~CudaBuffer() {
     assert((isRef || allocFreeCount == 0) &&
@@ -22,65 +32,50 @@ struct CudaBuffer {
   }
 #endif
 
-  [[nodiscard]] inline CUdeviceptr dPointer() const {
-    return (CUdeviceptr)d_ptr;
-  }
+  [[nodiscard]] inline CUdeviceptr dPointer() const { return d_ptr; }
 
-  // re-size buffer to given number of bytes
-  void resize(size_t size) {
-    if (d_ptr)
-      free();
-    alloc(size);
-  }
-
-  template <typename T> void allocInit(size_t size, const T init) {
-    assert(!DeviceContextRegistry::getInstance().isEmpty() &&
-           "No DeviceContext registered!");
-    if (d_ptr)
-      free();
-    sizeInBytes = size * sizeof(T);
-    cuMemAlloc((CUdeviceptr *)&d_ptr, sizeInBytes);
+  // free allocated memory
+  void free() {
+    if (d_ptr == 0) {
+      assert(sizeInBytes == 0);
+      return;
+    }
+    CUDA_CHECK(context->ch.cuMemFree(d_ptr));
 #ifndef NDEBUG
-    allocFreeCount++;
+    --allocFreeCount;
 #endif
-    // Create host buffer filled with init value and copy to device
-    std::vector<T> initBuffer(size, init);
-    cuMemcpyHtoD((CUdeviceptr)d_ptr, initBuffer.data(), sizeInBytes);
-  }
-
-  template <typename T> void set(size_t count, const T init) {
-    assert(d_ptr != nullptr);
-    assert(sizeInBytes == count * sizeof(T));
-    // Create host buffer filled with init value and copy to device
-    std::vector<T> initBuffer(count, init);
-    cuMemcpyHtoD((CUdeviceptr)d_ptr, initBuffer.data(), sizeInBytes);
+    d_ptr = 0;
+    sizeInBytes = 0;
   }
 
   // allocate to given number of bytes
   void alloc(size_t size) {
-    assert(!DeviceContextRegistry::getInstance().isEmpty() &&
-           "No DeviceContext registered!");
-    if (d_ptr)
+    if (d_ptr != 0)
       free();
-    this->sizeInBytes = size;
-    cuMemAlloc((CUdeviceptr *)&d_ptr, sizeInBytes);
+    sizeInBytes = size;
+    CUDA_CHECK(context->ch.cuMemAlloc(&d_ptr, sizeInBytes));
 #ifndef NDEBUG
-    allocFreeCount++;
+    ++allocFreeCount;
 #endif
   }
 
-  // free allocated memory
-  void free() {
-    if (d_ptr == nullptr) {
-      assert(sizeInBytes == 0);
-      return;
-    }
-    cuMemFree((CUdeviceptr)d_ptr);
-#ifndef NDEBUG
-    allocFreeCount--;
-#endif
-    d_ptr = nullptr;
-    sizeInBytes = 0;
+  template <typename T> void set(size_t count, const T init) {
+    assert(d_ptr != 0);
+    assert(sizeInBytes == count * sizeof(T));
+    // Create host buffer filled with init value and copy to device
+    std::vector<T> initBuffer(count, init);
+    CUDA_CHECK(context->ch.cuMemcpyHtoD(d_ptr, initBuffer.data(), sizeInBytes));
+  }
+
+  template <typename T> void allocInit(size_t size, const T init) {
+    alloc(size * sizeof(T));
+    set(size, init);
+  }
+
+  template <typename T> void upload(const T *t, size_t count) {
+    assert(d_ptr != 0);
+    assert(sizeInBytes == count * sizeof(T));
+    CUDA_CHECK(context->ch.cuMemcpyHtoD(d_ptr, (void *)t, count * sizeof(T)));
   }
 
   template <typename T> void allocUpload(const std::vector<T> &vt) {
@@ -93,20 +88,15 @@ struct CudaBuffer {
     upload(&vt, 1);
   }
 
-  template <typename T> void upload(const T *t, size_t count) {
-    assert(d_ptr != nullptr);
-    assert(sizeInBytes == count * sizeof(T));
-    cuMemcpyHtoD((CUdeviceptr)d_ptr, (void *)t, count * sizeof(T));
-  }
-
   template <typename T> void download(T *t, size_t count) {
-    assert(d_ptr != nullptr);
+    assert(d_ptr != 0);
     assert(sizeInBytes == count * sizeof(T));
-    cuMemcpyDtoH((void *)t, (CUdeviceptr)d_ptr, count * sizeof(T));
+    CUDA_CHECK(context->ch.cuMemcpyDtoH((void *)t, d_ptr, count * sizeof(T)));
   }
 
+  std::shared_ptr<DeviceContext> context;
   size_t sizeInBytes{0};
-  void *d_ptr{nullptr};
+  CUdeviceptr d_ptr{0};
 #ifndef NDEBUG
   int allocFreeCount = 0;
   bool isRef = false;
