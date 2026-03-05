@@ -201,6 +201,11 @@ struct DeviceContext {
   // Instance methods
   void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
               const int deviceID = 0) {
+    if (ch.handle == nullptr) {
+      // CUDA driver not available, context cannot be created.
+      return;
+    }
+
     // create new context
     this->modulePath = modulePath;
     this->deviceID = deviceID;
@@ -285,6 +290,7 @@ struct DeviceContext {
   std::string getModulePath() const { return modulePath.string(); }
   std::string getDeviceName() const { return deviceName; }
   int getDeviceID() const { return deviceID; }
+  bool hasCuda() const { return ch.handle != nullptr; }
 
   void destroy() {
     if (deviceID == -1)

@@ -3,17 +3,44 @@
 #ifdef VIENNACORE_COMPILE_GPU
 
 #include <cassert>
-#include <dlfcn.h>
 #include <stdexcept>
 #include <string>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
 #include "vcChecks.hpp"
 #include "vcLogger.hpp"
+
+namespace viennacore {
 
 struct CudaHandle {
   void *handle = nullptr;
 
   CudaHandle() {
+#ifdef VIENNACORE_FORCE_NOLOAD_CUDA
+    return;
+#endif
+
+#ifdef _WIN32
+    const char *candidates[] = {
+        "nvcuda.dll",
+        "nvcuda",
+    };
+    for (auto *name : candidates) {
+      HMODULE hModule = LoadLibraryA(name);
+      if (hModule) {
+        handle = hModule;
+        VIENNACORE_LOG_DEBUG("Successfully loaded CUDA driver library: " +
+                             std::string(name));
+        return;
+      }
+    }
+    VIENNACORE_LOG_DEBUG("CUDA driver not found.");
+#else
     const char *candidates[] = {
         "libcuda.so.1",
         "libcuda.so",
@@ -26,14 +53,18 @@ struct CudaHandle {
         return;
       }
     }
-    VIENNACORE_LOG_ERROR(std::string("CUDA driver not found. ") +
-                         "Install CUDA driver (libcuda) and ensure it "
-                         "is on the loader path.");
+    VIENNACORE_LOG_DEBUG("CUDA driver not found.");
+#endif
   }
 
   ~CudaHandle() {
-    if (handle)
+    if (handle) {
+#ifdef _WIN32
+      FreeLibrary(static_cast<HMODULE>(handle));
+#else
       dlclose(handle);
+#endif
+    }
   }
 
   void load() {
@@ -46,7 +77,19 @@ struct CudaHandle {
   }
 
   template <class Fn> Fn load(const char *symbol) {
-    assert(handle != nullptr);
+    if (!handle) {
+      VIENNACORE_LOG_ERROR(std::string("Cannot load CUDA symbol: ") + symbol +
+                           " (CUDA driver library not loaded)");
+      return nullptr;
+    }
+
+#ifdef _WIN32
+    auto *p = GetProcAddress(static_cast<HMODULE>(handle), symbol);
+    if (!p) {
+      VIENNACORE_LOG_ERROR(std::string("Missing CUDA symbol: ") + symbol);
+    }
+    return reinterpret_cast<Fn>(p);
+#else
     dlerror(); // clear
     auto *p = dlsym(handle, symbol);
     const char *e = dlerror();
@@ -54,6 +97,7 @@ struct CudaHandle {
       VIENNACORE_LOG_ERROR(std::string("Missing CUDA symbol: ") + symbol +
                            " (" + e + ")");
     return reinterpret_cast<Fn>(p);
+#endif
   }
 
   template <class... Args> auto call(const char *symbol, Args... args) {
@@ -68,4 +112,5 @@ struct CudaHandle {
   CUresult (*cuMemFree)(CUdeviceptr) = nullptr;
 };
 
+} // namespace viennacore
 #endif // VIENNACORE_COMPILE_GPU

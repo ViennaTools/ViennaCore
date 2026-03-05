@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+using namespace viennacore;
+
 int main() {
   CudaHandle handle;
   handle.call("cuInit", 0);
