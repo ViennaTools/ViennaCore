@@ -5,19 +5,8 @@
 #include <cuda.h>
 #include <cudaTypedefs.h>
 
-#include <string>
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
-#include "vcLogger.hpp"
-
-namespace viennacore {
-
 #ifdef VIENNACORE_LINK_CUDA_DRIVER
+namespace viennacore {
 struct CudaHandle {
   bool isLoaded() const { return true; }
 
@@ -47,8 +36,18 @@ struct CudaHandle {
   PFN_cuMemFree cuMemFree_ = &cuMemFree;
   PFN_cuLaunchKernel cuLaunchKernel_ = &cuLaunchKernel;
 };
-
+} // namespace viennacore
 #else
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+#include "vcLogger.hpp"
+
+namespace viennacore {
 struct CudaHandle {
   const int cuda_version;
   void *handle = nullptr;
@@ -236,8 +235,7 @@ private:
     return ok;
   }
 };
-#endif
-
 } // namespace viennacore
+#endif
 
 #endif // VIENNACORE_COMPILE_GPU

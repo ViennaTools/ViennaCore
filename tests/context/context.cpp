@@ -11,7 +11,7 @@ void testBasicContextCreation() {
 
   using namespace viennacore;
   DeviceContext context;
-  context.create();
+  context.create(VIENNACORE_KERNELS_PATH, 0);
   auto deviceName = context.getDeviceName();
   auto modulePath = context.getModulePath();
 
@@ -191,7 +191,7 @@ void testContextRegistryClearFunction() {
 
 int main() {
   testBasicContextCreation();
-  // testGlobalContextRegistry();
+  testGlobalContextRegistry();
   testMultipleDeviceContexts();
   testContextRegistryThreadSafety();
   testContextRegistryClearFunction();

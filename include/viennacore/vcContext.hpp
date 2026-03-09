@@ -145,9 +145,14 @@ private:
 
 struct DeviceContext {
   // Static factory methods for creating and managing contexts
+  static int defaultDevieId;
+
   static std::shared_ptr<DeviceContext>
   createContext(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
-                const int deviceID = 0, bool registerInGlobal = true) {
+                int deviceID = -1, bool registerInGlobal = true) {
+    if (deviceID == -1)
+      deviceID = defaultDevieId;
+
     // Check if context already exists for this device
     if (registerInGlobal &&
         DeviceContextRegistry::getInstance().hasContext(deviceID)) {
@@ -158,8 +163,8 @@ struct DeviceContext {
     }
 
 #ifdef VIENNACORE_DYNAMIC_MODULE_PATH
-    // If a dynamic modules path is specified (at build or runtime), adjust the
-    // modulePath to be relative to the current module's location
+    // If a dynamic modules path is specified (at build or runtime), adjust
+    // the modulePath to be relative to the current module's location
 #ifdef _WIN32
     HMODULE hModule = GetModuleHandle(NULL);
     char path[MAX_PATH];
@@ -188,7 +193,11 @@ struct DeviceContext {
     return context;
   }
 
-  static std::shared_ptr<DeviceContext> getContextFromRegistry(int deviceID) {
+  static std::shared_ptr<DeviceContext>
+  getContextFromRegistry(int deviceID = -1) {
+    if (deviceID == -1) {
+      deviceID = defaultDevieId;
+    }
     return DeviceContextRegistry::getInstance().getContext(deviceID);
   }
 
@@ -201,10 +210,11 @@ struct DeviceContext {
   }
 
   // Instance methods
-  void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
-              const int deviceID = 0) {
+  void create(std::filesystem::path modulePath, const int deviceID) {
     if (!ch.isLoaded()) {
       // CUDA driver not available, context cannot be created.
+      VIENNACORE_LOG_WARNING(
+          "CUDA driver not available, context cannot be created.");
       return;
     }
 
@@ -213,25 +223,33 @@ struct DeviceContext {
     this->deviceID = deviceID;
 
     // initialize CUDA driver API (cuda.h)
-    ch.cuInit_(0);
+    CUDA_CHECK(ch.cuInit_(0));
 
     int numDevices;
-    ch.cuDeviceGetCount_(&numDevices);
+    CUDA_CHECK(ch.cuDeviceGetCount_(&numDevices));
     if (numDevices == 0) {
       VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
+      return;
+    }
+
+    if (deviceID < 0 || deviceID >= numDevices) {
+      VIENNACORE_LOG_ERROR(
+          "Invalid CUDA device ID " + std::to_string(deviceID) + ", only " +
+          std::to_string(numDevices) + " device(s) available.");
+      return;
     }
 
     CUdevice device;
-    ch.cuDeviceGet_(&device, deviceID);
+    CUDA_CHECK(ch.cuDeviceGet_(&device, deviceID));
 
     // Get device name
     char deviceNameBuffer[256];
-    ch.cuDeviceGetName_(deviceNameBuffer, 256, device);
+    CUDA_CHECK(ch.cuDeviceGetName_(deviceNameBuffer, 256, device));
     deviceName = deviceNameBuffer;
     VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
 
     // Create CUDA device context
-    ch.cuCtxCreate_(&cuda, 0, device);
+    CUDA_CHECK(ch.cuCtxCreate_(&cuda, 0, device));
 
     // Test that context is functional by allocating and freeing a small amount
     // of memory
@@ -318,5 +336,7 @@ struct DeviceContext {
   OptixDeviceContext optix;
   int deviceID = -1;
 };
+
+int DeviceContext::defaultDevieId = 0;
 
 } // namespace viennacore

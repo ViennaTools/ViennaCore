@@ -15,14 +15,16 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
-  CudaBuffer() : context(DeviceContextRegistry::getInstance().getContext(0)) {
+  CudaBuffer(int deviceId = -1)
+      : context(DeviceContext::getContextFromRegistry(deviceId)) {
     assert(context->foundCuda() &&
            "CUDA driver not found, cannot create CudaBuffer.");
   }
 
-  CudaBuffer(const CudaBuffer &other) : context(other.context) {
+  CudaBuffer(const CudaBuffer &other) {
     // Create a new buffer that shares the same device pointer and size, but
     // does not take ownership of the memory (i.e. will not free it).
+    context = other.context;
     d_ptr = other.d_ptr;
     sizeInBytes = other.sizeInBytes;
     isRef = true;
