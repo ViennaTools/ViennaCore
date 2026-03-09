@@ -2,8 +2,9 @@
 
 #ifdef VIENNACORE_COMPILE_GPU
 
-#include <cassert>
-#include <stdexcept>
+#include <cuda.h>
+#include <cudaTypedefs.h>
+
 #include <string>
 
 #ifdef _WIN32
@@ -12,7 +13,6 @@
 #include <dlfcn.h>
 #endif
 
-#include "vcChecks.hpp"
 #include "vcLogger.hpp"
 
 namespace viennacore {
@@ -20,41 +20,66 @@ namespace viennacore {
 struct CudaHandle {
   void *handle = nullptr;
 
+  // cuGetProcAddress itself is loaded from the driver library once.
+  using CuGetProcAddressFn = CUresult(CUDAAPI *)(
+      const char *symbol, void **pfn, int cudaVersion, cuuint64_t flags,
+      CUdriverProcAddressQueryResult *symbolStatus);
+
+  CuGetProcAddressFn cuGetProcAddress_ = nullptr;
+
+  PFN_cuInit cuInit_ = nullptr;
+  PFN_cuDeviceGetCount cuDeviceGetCount_ = nullptr;
+  PFN_cuDeviceGet cuDeviceGet_ = nullptr;
+  PFN_cuDeviceGetName cuDeviceGetName_ = nullptr;
+
+  // Use explicit versioned typedef here to avoid ambiguity.
+  PFN_cuCtxCreate_v3020 cuCtxCreate_ = nullptr;
+
+  PFN_cuCtxSetCurrent cuCtxSetCurrent_ = nullptr;
+  PFN_cuCtxGetCurrent cuCtxGetCurrent_ = nullptr;
+  PFN_cuCtxDestroy cuCtxDestroy_ = nullptr;
+  PFN_cuCtxSynchronize cuCtxSynchronize_ = nullptr;
+  PFN_cuModuleLoad cuModuleLoad_ = nullptr;
+  PFN_cuModuleUnload cuModuleUnload_ = nullptr;
+  PFN_cuModuleGetFunction cuModuleGetFunction_ = nullptr;
+  PFN_cuMemAlloc cuMemAlloc_ = nullptr;
+  PFN_cuMemcpyHtoD cuMemcpyHtoD_ = nullptr;
+  PFN_cuMemcpyDtoH cuMemcpyDtoH_ = nullptr;
+  PFN_cuMemFree cuMemFree_ = nullptr;
+  PFN_cuLaunchKernel cuLaunchKernel_ = nullptr;
+
   CudaHandle() {
 #ifdef VIENNACORE_FORCE_NOLOAD_CUDA
     return;
 #endif
 
 #ifdef _WIN32
-    const char *candidates[] = {
-        "nvcuda.dll",
-        "nvcuda",
-    };
+    const char *candidates[] = {"nvcuda.dll", "nvcuda"};
     for (auto *name : candidates) {
       HMODULE hModule = LoadLibraryA(name);
       if (hModule) {
         handle = hModule;
         VIENNACORE_LOG_DEBUG("Successfully loaded CUDA driver library: " +
                              std::string(name));
+        load();
         return;
       }
     }
-    VIENNACORE_LOG_DEBUG("CUDA driver not found.");
 #else
-    const char *candidates[] = {
-        "libcuda.so.1",
-        "libcuda.so",
-    };
+    // Stick to the canonical soname to avoid path/ABI confusion.
+    const char *candidates[] = {"libcuda.so.1"};
     for (auto *name : candidates) {
       handle = dlopen(name, RTLD_NOW | RTLD_LOCAL);
       if (handle) {
         VIENNACORE_LOG_DEBUG("Successfully loaded CUDA driver library: " +
                              std::string(name));
+        load();
         return;
       }
     }
-    VIENNACORE_LOG_DEBUG("CUDA driver not found.");
 #endif
+
+    VIENNACORE_LOG_DEBUG("CUDA driver not found.");
   }
 
   ~CudaHandle() {
@@ -64,21 +89,16 @@ struct CudaHandle {
 #else
       dlclose(handle);
 #endif
+      handle = nullptr;
     }
   }
 
-  void load() {
-    cuMemAlloc = load<CUresult (*)(CUdeviceptr *, size_t)>("cuMemAlloc");
-    cuMemcpyHtoD =
-        load<CUresult (*)(CUdeviceptr, const void *, size_t)>("cuMemcpyHtoD");
-    cuMemcpyDtoH =
-        load<CUresult (*)(void *, CUdeviceptr, size_t)>("cuMemcpyDtoH");
-    cuMemFree = load<CUresult (*)(CUdeviceptr)>("cuMemFree");
-  }
+  bool isLoaded() const { return handle != nullptr; }
 
-  template <class Fn> Fn load(const char *symbol) const {
+private:
+  template <class Fn> Fn loadDriverExport(const char *symbol) const {
     if (!handle) {
-      VIENNACORE_LOG_ERROR(std::string("Cannot load CUDA symbol: ") + symbol +
+      VIENNACORE_LOG_ERROR(std::string("Cannot load CUDA export: ") + symbol +
                            " (CUDA driver library not loaded)");
       return nullptr;
     }
@@ -86,30 +106,92 @@ struct CudaHandle {
 #ifdef _WIN32
     auto *p = GetProcAddress(static_cast<HMODULE>(handle), symbol);
     if (!p) {
-      VIENNACORE_LOG_ERROR(std::string("Missing CUDA symbol: ") + symbol);
+      VIENNACORE_LOG_ERROR(std::string("Missing CUDA export: ") + symbol);
+      return nullptr;
     }
     return reinterpret_cast<Fn>(p);
 #else
+    dlerror(); // clear stale error
     auto *p = dlsym(handle, symbol);
     const char *e = dlerror();
-    if (e)
-      VIENNACORE_LOG_ERROR(std::string("Missing CUDA symbol: ") + symbol +
+    if (e != nullptr) {
+      VIENNACORE_LOG_ERROR(std::string("Missing CUDA export: ") + symbol +
                            " (" + e + ")");
+      return nullptr;
+    }
     return reinterpret_cast<Fn>(p);
 #endif
   }
 
-  template <class... Args> auto call(const char *symbol, Args &&...args) const {
-    auto fn = load<CUresult (*)(std::remove_reference_t<Args>...)>(symbol);
-    CUDA_CHECK(fn(std::forward<Args>(args)...));
+  template <class Fn>
+  bool loadProc(Fn &fn, const char *symbol, int cudaVersion,
+                cuuint64_t flags = CU_GET_PROC_ADDRESS_DEFAULT) {
+    if (!cuGetProcAddress_) {
+      VIENNACORE_LOG_ERROR("Cannot load CUDA proc address before "
+                           "cuGetProcAddress is available.");
+      fn = nullptr;
+      return false;
+    }
+
+    void *p = nullptr;
+    CUdriverProcAddressQueryResult status = CU_GET_PROC_ADDRESS_SUCCESS;
+    CUresult result =
+        cuGetProcAddress_(symbol, &p, cudaVersion, flags, &status);
+
+    if (result != CUDA_SUCCESS || p == nullptr ||
+        status != CU_GET_PROC_ADDRESS_SUCCESS) {
+      VIENNACORE_LOG_ERROR("Failed to load CUDA symbol via cuGetProcAddress: " +
+                           std::string(symbol));
+      fn = nullptr;
+      return false;
+    }
+
+    fn = reinterpret_cast<Fn>(p);
+    return true;
   }
 
-  // CUDA driver API function pointers
-  CUresult (*cuMemAlloc)(CUdeviceptr *, size_t) = nullptr;
-  CUresult (*cuMemcpyHtoD)(CUdeviceptr, const void *, size_t) = nullptr;
-  CUresult (*cuMemcpyDtoH)(void *, CUdeviceptr, size_t) = nullptr;
-  CUresult (*cuMemFree)(CUdeviceptr) = nullptr;
+  bool load() {
+    if (!handle) {
+      VIENNACORE_LOG_ERROR("CUDA driver library not loaded.");
+      return false;
+    }
+
+    // First load cuGetProcAddress from the driver library itself.
+    cuGetProcAddress_ =
+        loadDriverExport<CuGetProcAddressFn>("cuGetProcAddress");
+    if (!cuGetProcAddress_) {
+      VIENNACORE_LOG_ERROR("cuGetProcAddress not available in CUDA driver.");
+      return false;
+    }
+
+    bool ok = true;
+
+    // Use CUDA_VERSION for the normal functions.
+    ok &= loadProc(cuInit_, "cuInit", CUDA_VERSION);
+    ok &= loadProc(cuDeviceGetCount_, "cuDeviceGetCount", CUDA_VERSION);
+    ok &= loadProc(cuDeviceGet_, "cuDeviceGet", CUDA_VERSION);
+    ok &= loadProc(cuDeviceGetName_, "cuDeviceGetName", CUDA_VERSION);
+
+    // Explicit old ABI for cuCtxCreate.
+    ok &= loadProc(cuCtxCreate_, "cuCtxCreate", 3020);
+
+    ok &= loadProc(cuCtxSetCurrent_, "cuCtxSetCurrent", CUDA_VERSION);
+    ok &= loadProc(cuCtxGetCurrent_, "cuCtxGetCurrent", CUDA_VERSION);
+    ok &= loadProc(cuCtxDestroy_, "cuCtxDestroy", CUDA_VERSION);
+    ok &= loadProc(cuCtxSynchronize_, "cuCtxSynchronize", CUDA_VERSION);
+    ok &= loadProc(cuModuleLoad_, "cuModuleLoad", CUDA_VERSION);
+    ok &= loadProc(cuModuleUnload_, "cuModuleUnload", CUDA_VERSION);
+    ok &= loadProc(cuModuleGetFunction_, "cuModuleGetFunction", CUDA_VERSION);
+    ok &= loadProc(cuMemAlloc_, "cuMemAlloc", CUDA_VERSION);
+    ok &= loadProc(cuMemcpyHtoD_, "cuMemcpyHtoD", CUDA_VERSION);
+    ok &= loadProc(cuMemcpyDtoH_, "cuMemcpyDtoH", CUDA_VERSION);
+    ok &= loadProc(cuMemFree_, "cuMemFree", CUDA_VERSION);
+    ok &= loadProc(cuLaunchKernel_, "cuLaunchKernel", CUDA_VERSION);
+
+    return ok;
+  }
 };
 
 } // namespace viennacore
+
 #endif // VIENNACORE_COMPILE_GPU

@@ -95,8 +95,6 @@ public:
     if (it != contexts_.end()) {
       return it->second;
     }
-    VIENNACORE_LOG_ERROR("Context for device " + std::to_string(deviceID) +
-                         " not found in registry.");
     return nullptr;
   }
 
@@ -203,7 +201,7 @@ struct DeviceContext {
   // Instance methods
   void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
               const int deviceID = 0) {
-    if (ch.handle == nullptr) {
+    if (!ch.isLoaded()) {
       // CUDA driver not available, context cannot be created.
       return;
     }
@@ -213,35 +211,32 @@ struct DeviceContext {
     this->deviceID = deviceID;
 
     // initialize CUDA driver API (cuda.h)
-    ch.call("cuInit", 0);
+    ch.cuInit_(0);
 
     int numDevices;
-    ch.call("cuDeviceGetCount", &numDevices);
+    ch.cuDeviceGetCount_(&numDevices);
     if (numDevices == 0) {
       VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
     }
 
     CUdevice device;
-    ch.call("cuDeviceGet", &device, deviceID);
+    ch.cuDeviceGet_(&device, deviceID);
 
     // Get device name
     char deviceNameBuffer[256];
-    ch.call("cuDeviceGetName", deviceNameBuffer, 256, device);
+    ch.cuDeviceGetName_(deviceNameBuffer, 256, device);
     deviceName = deviceNameBuffer;
     VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
 
     // Create CUDA device context
-    ch.call("cuCtxCreate", &cuda, 0, device);
-
-    // preload CUDA driver symbols we need for memory management
-    ch.load();
+    ch.cuCtxCreate_(&cuda, 0, device);
 
     // Test that context is functional by allocating and freeing a small amount
     // of memory
     CUdeviceptr d_ptr;
-    CUDA_CHECK(ch.cuMemAlloc(&d_ptr, 1));
+    CUDA_CHECK(ch.cuMemAlloc_(&d_ptr, 1));
     assert(d_ptr != 0);
-    CUDA_CHECK(ch.cuMemFree(d_ptr));
+    CUDA_CHECK(ch.cuMemFree_(d_ptr));
 
     // add default modules
     VIENNACORE_LOG_DEBUG("PTX kernels path: " + modulePath.string());
@@ -250,7 +245,7 @@ struct DeviceContext {
     // initialize OptiX context
     OPTIX_CHECK(optixInit());
 
-    optixDeviceContextCreate(cuda, 0, &optix);
+    OPTIX_CHECK(optixDeviceContextCreate(cuda, 0, &optix));
     optixDeviceContextSetLogCallback(optix, contextLogCallback, nullptr, 4);
   }
 
@@ -283,7 +278,7 @@ struct DeviceContext {
 
     CUmodule module;
     const std::string p = (modulePath / moduleName).string();
-    ch.call("cuModuleLoad", &module, p.c_str());
+    ch.cuModuleLoad_(&module, p.c_str());
 
     modules.push_back(module);
     moduleNames.push_back(moduleName);
@@ -292,20 +287,18 @@ struct DeviceContext {
   std::string getModulePath() const { return modulePath.string(); }
   std::string getDeviceName() const { return deviceName; }
   int getDeviceID() const { return deviceID; }
-  bool foundCuda() const { return ch.handle != nullptr; }
-  void sync() const { ch.call("cuCtxSynchronize", cuda); }
+  bool foundCuda() const { return ch.isLoaded(); }
+  void sync() const { ch.cuCtxSynchronize_(); }
 
   void destroy() {
     if (deviceID == -1)
       return;
 
     for (auto module : modules) {
-      // cuModuleUnload(module);
-      ch.call("cuModuleUnload", module);
+      ch.cuModuleUnload_(module);
     }
     optixDeviceContextDestroy(optix);
-    // cuCtxDestroy(cuda);
-    ch.call("cuCtxDestroy", cuda);
+    ch.cuCtxDestroy_(cuda);
 
     // Unregister from global registry
     DeviceContextRegistry::getInstance().unregisterContext(deviceID);

@@ -8,37 +8,26 @@ using namespace viennacore;
 
 int main() {
   CudaHandle handle;
-  handle.call("cuInit", 0);
+  handle.cuInit_(0);
 
   // Check how many devices are available
   int deviceCount = 0;
-  handle.call("cuDeviceGetCount", &deviceCount);
+  handle.cuDeviceGetCount_(&deviceCount);
   std::cout << "Device count: " << deviceCount << std::endl;
-
-  try {
-    auto nonExisting = handle.load<OptixResult (*)(
-        CUcontext, const OptixDeviceContextOptions *, OptixDeviceContext *)>(
-        "optixDeviceContextCreate");
-  } catch (const std::runtime_error &e) {
-    // Expected to fail
-    std::cout << "Caught expected error: " << e.what() << std::endl;
-  }
 
   // Get the first CUDA device
   CUdevice device;
-  handle.call("cuDeviceGet", &device, 0);
+  handle.cuDeviceGet_(&device, 0);
 
   // Create a new context for the device
   CUcontext context;
-  handle.call("cuCtxCreate", &context, 0, device);
+  handle.cuCtxCreate_(&context, 0, device);
 
   std::cout << "Successfully created context: " << context << std::endl;
 
-  handle.load();
-
   // Now allocate memory
   CUdeviceptr d_ptr{0};
-  CUresult result = handle.cuMemAlloc(&d_ptr, 1024);
+  CUresult result = handle.cuMemAlloc_(&d_ptr, 1024);
 
   if (result != 0) {
     std::cout << "cuMemAlloc failed with error code: " << result << std::endl;
@@ -49,7 +38,7 @@ int main() {
 
   // Free the allocated memory
   if (d_ptr) {
-    CUresult freeResult = handle.cuMemFree(d_ptr);
+    CUresult freeResult = handle.cuMemFree_(d_ptr);
     if (freeResult != 0) {
       std::cout << "cuMemFree failed with error code: " << freeResult
                 << std::endl;
