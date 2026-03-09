@@ -33,4 +33,9 @@ int main() {
 
   buffer.free();
   buffer2.free();
+
+  CudaBuffer buffer3 = buffer;
+  VC_TEST_ASSERT(buffer3.dPointer() == buffer.dPointer());
+  VC_TEST_ASSERT(buffer3.sizeInBytes == buffer.sizeInBytes);
+  VC_TEST_ASSERT(buffer3.isRef);
 }

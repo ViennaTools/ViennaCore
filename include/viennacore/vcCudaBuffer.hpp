@@ -15,8 +15,29 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
-  CudaBuffer() : ch(DeviceContextRegistry::getInstance().getContext(0)->ch) {}
-  CudaBuffer(const CudaHandle &ch) : ch(ch) {}
+  CudaBuffer() : context(*DeviceContextRegistry::getInstance().getContext(0)) {}
+
+  CudaBuffer(const CudaBuffer &other) : context(other.context) {
+    // Create a new buffer that shares the same device pointer and size, but
+    // does not take ownership of the memory (i.e. will not free it).
+    d_ptr = other.d_ptr;
+    sizeInBytes = other.sizeInBytes;
+    isRef = true;
+  }
+
+  CudaBuffer &operator=(const CudaBuffer &other) {
+    if (this != &other) {
+      // Free existing memory if we own it
+      if (!isRef && d_ptr != 0) {
+        free();
+      }
+      context = other.context;
+      d_ptr = other.d_ptr;
+      sizeInBytes = other.sizeInBytes;
+      isRef = true; // This buffer is now a reference to the same memory
+    }
+    return *this;
+  }
 
 #ifndef NDEBUG
   ~CudaBuffer() {
@@ -29,11 +50,19 @@ struct CudaBuffer {
 
   // free allocated memory
   void free() {
+    if (isRef) {
+      // This buffer is a reference to memory owned by another buffer, so we
+      // should not free it.
+      d_ptr = 0;
+      sizeInBytes = 0;
+      return;
+    }
+
     if (d_ptr == 0) {
       assert(sizeInBytes == 0);
       return;
     }
-    CUDA_CHECK(ch.cuMemFree_(d_ptr));
+    CUDA_CHECK(context.ch.cuMemFree_(d_ptr));
 #ifndef NDEBUG
     --allocFreeCount;
 #endif
@@ -43,10 +72,18 @@ struct CudaBuffer {
 
   // allocate to given number of bytes
   void alloc(size_t size) {
-    if (d_ptr != 0)
-      free();
+    if (d_ptr != 0) {
+      // Free existing memory (also if this buffer is a reference)
+      CUDA_CHECK(context.ch.cuMemFree_(d_ptr));
+#ifndef NDEBUG
+      --allocFreeCount;
+#endif
+      d_ptr = 0;
+      sizeInBytes = 0;
+    }
+
     sizeInBytes = size;
-    CUDA_CHECK(ch.cuMemAlloc_(&d_ptr, sizeInBytes));
+    CUDA_CHECK(context.ch.cuMemAlloc_(&d_ptr, sizeInBytes));
 #ifndef NDEBUG
     ++allocFreeCount;
 #endif
@@ -57,7 +94,7 @@ struct CudaBuffer {
     assert(sizeInBytes == count * sizeof(T));
     // Create host buffer filled with init value and copy to device
     std::vector<T> initBuffer(count, init);
-    CUDA_CHECK(ch.cuMemcpyHtoD_(d_ptr, initBuffer.data(), sizeInBytes));
+    CUDA_CHECK(context.ch.cuMemcpyHtoD_(d_ptr, initBuffer.data(), sizeInBytes));
   }
 
   template <typename T> void allocInit(size_t size, const T init) {
@@ -68,7 +105,7 @@ struct CudaBuffer {
   template <typename T> void upload(const T *t, size_t count) {
     assert(d_ptr != 0);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(ch.cuMemcpyHtoD_(d_ptr, (void *)t, count * sizeof(T)));
+    CUDA_CHECK(context.ch.cuMemcpyHtoD_(d_ptr, (void *)t, count * sizeof(T)));
   }
 
   template <typename T> void allocUpload(const std::vector<T> &vt) {
@@ -84,15 +121,15 @@ struct CudaBuffer {
   template <typename T> void download(T *t, size_t count) {
     assert(d_ptr != 0);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(ch.cuMemcpyDtoH_((void *)t, d_ptr, count * sizeof(T)));
+    CUDA_CHECK(context.ch.cuMemcpyDtoH_((void *)t, d_ptr, count * sizeof(T)));
   }
 
-  const CudaHandle &ch;
+  DeviceContext &context;
   size_t sizeInBytes{0};
   CUdeviceptr d_ptr{0};
+  bool isRef = false;
 #ifndef NDEBUG
   int allocFreeCount = 0;
-  bool isRef = false;
 #endif
 };
 

@@ -18,7 +18,7 @@
 namespace viennacore {
 
 struct CudaHandle {
-  const int cuda_version;
+  int cuda_version;
   void *handle = nullptr;
 
   // cuGetProcAddress itself is loaded from the driver library once.
