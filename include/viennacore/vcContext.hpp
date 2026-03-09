@@ -337,6 +337,6 @@ struct DeviceContext {
   int deviceID = -1;
 };
 
-int DeviceContext::defaultDevieId = 0;
+inline int DeviceContext::defaultDevieId = 0;
 
 } // namespace viennacore
