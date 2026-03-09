@@ -1,6 +1,6 @@
 #include <cuda.h>
 
-#include "vcCudaLoader.hpp"
+#include "vcCudaHandle.hpp"
 
 #include <iostream>
 

@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "vcChecks.hpp"
-#include "vcCudaLoader.hpp"
+#include "vcCudaHandle.hpp"
 #include "vcLogger.hpp"
 
 #define STRINGIFY_HELPER(X) #X
