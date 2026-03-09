@@ -103,12 +103,6 @@ struct CudaHandle {
 
 private:
   template <class Fn> Fn loadDriverExport(const char *symbol) const {
-    if (!handle) {
-      VIENNACORE_LOG_ERROR(std::string("Cannot load CUDA export: ") + symbol +
-                           " (CUDA driver library not loaded)");
-      return nullptr;
-    }
-
 #ifdef _WIN32
     auto *p = GetProcAddress(static_cast<HMODULE>(handle), symbol);
     if (!p) {
@@ -157,11 +151,6 @@ private:
   }
 
   bool load() {
-    if (!handle) {
-      VIENNACORE_LOG_ERROR("CUDA driver library not loaded.");
-      return false;
-    }
-
     // First load cuGetProcAddress from the driver library itself.
     cuGetProcAddress_ =
         loadDriverExport<CuGetProcAddressFn>("cuGetProcAddress");
