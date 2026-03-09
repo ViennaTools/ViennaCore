@@ -90,7 +90,6 @@ struct CudaHandle {
     }
     return reinterpret_cast<Fn>(p);
 #else
-    dlerror(); // clear
     auto *p = dlsym(handle, symbol);
     const char *e = dlerror();
     if (e)

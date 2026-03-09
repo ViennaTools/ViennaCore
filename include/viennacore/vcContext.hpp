@@ -290,7 +290,8 @@ struct DeviceContext {
   std::string getModulePath() const { return modulePath.string(); }
   std::string getDeviceName() const { return deviceName; }
   int getDeviceID() const { return deviceID; }
-  bool hasCuda() const { return ch.handle != nullptr; }
+  bool foundCuda() const { return ch.handle != nullptr; }
+  void sync() const { ch.call("cuCtxSynchronize", cuda); }
 
   void destroy() {
     if (deviceID == -1)
