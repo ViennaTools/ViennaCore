@@ -76,7 +76,7 @@ struct CudaHandle {
     cuMemFree = load<CUresult (*)(CUdeviceptr)>("cuMemFree");
   }
 
-  template <class Fn> Fn load(const char *symbol) {
+  template <class Fn> Fn load(const char *symbol) const {
     if (!handle) {
       VIENNACORE_LOG_ERROR(std::string("Cannot load CUDA symbol: ") + symbol +
                            " (CUDA driver library not loaded)");
@@ -100,9 +100,9 @@ struct CudaHandle {
 #endif
   }
 
-  template <class... Args> auto call(const char *symbol, Args... args) {
-    auto fn = load<CUresult (*)(Args...)>(symbol);
-    CUDA_CHECK(fn(args...));
+  template <class... Args> auto call(const char *symbol, Args &&...args) const {
+    auto fn = load<CUresult (*)(std::remove_reference_t<Args>...)>(symbol);
+    CUDA_CHECK(fn(std::forward<Args>(args)...));
   }
 
   // CUDA driver API function pointers
