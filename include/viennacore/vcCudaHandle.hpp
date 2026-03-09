@@ -18,6 +18,7 @@
 namespace viennacore {
 
 struct CudaHandle {
+  const int cuda_version;
   void *handle = nullptr;
 
   // cuGetProcAddress itself is loaded from the driver library once.
@@ -39,6 +40,11 @@ struct CudaHandle {
   PFN_cuCtxGetCurrent cuCtxGetCurrent_ = nullptr;
   PFN_cuCtxDestroy cuCtxDestroy_ = nullptr;
   PFN_cuCtxSynchronize cuCtxSynchronize_ = nullptr;
+
+  PFN_cuStreamCreate cuStreamCreate_ = nullptr;
+  PFN_cuStreamDestroy cuStreamDestroy_ = nullptr;
+  PFN_cuStreamSynchronize cuStreamSynchronize_ = nullptr;
+
   PFN_cuModuleLoad cuModuleLoad_ = nullptr;
   PFN_cuModuleUnload cuModuleUnload_ = nullptr;
   PFN_cuModuleGetFunction cuModuleGetFunction_ = nullptr;
@@ -48,7 +54,7 @@ struct CudaHandle {
   PFN_cuMemFree cuMemFree_ = nullptr;
   PFN_cuLaunchKernel cuLaunchKernel_ = nullptr;
 
-  CudaHandle() {
+  CudaHandle(int version = CUDA_VERSION) : cuda_version(version) {
 #ifdef VIENNACORE_FORCE_NOLOAD_CUDA
     return;
 #endif
@@ -167,26 +173,31 @@ private:
     bool ok = true;
 
     // Use CUDA_VERSION for the normal functions.
-    ok &= loadProc(cuInit_, "cuInit", CUDA_VERSION);
-    ok &= loadProc(cuDeviceGetCount_, "cuDeviceGetCount", CUDA_VERSION);
-    ok &= loadProc(cuDeviceGet_, "cuDeviceGet", CUDA_VERSION);
-    ok &= loadProc(cuDeviceGetName_, "cuDeviceGetName", CUDA_VERSION);
+    ok &= loadProc(cuInit_, "cuInit", cuda_version);
+    ok &= loadProc(cuDeviceGetCount_, "cuDeviceGetCount", cuda_version);
+    ok &= loadProc(cuDeviceGet_, "cuDeviceGet", cuda_version);
+    ok &= loadProc(cuDeviceGetName_, "cuDeviceGetName", cuda_version);
 
     // Explicit old ABI for cuCtxCreate.
     ok &= loadProc(cuCtxCreate_, "cuCtxCreate", 3020);
 
-    ok &= loadProc(cuCtxSetCurrent_, "cuCtxSetCurrent", CUDA_VERSION);
-    ok &= loadProc(cuCtxGetCurrent_, "cuCtxGetCurrent", CUDA_VERSION);
-    ok &= loadProc(cuCtxDestroy_, "cuCtxDestroy", CUDA_VERSION);
-    ok &= loadProc(cuCtxSynchronize_, "cuCtxSynchronize", CUDA_VERSION);
-    ok &= loadProc(cuModuleLoad_, "cuModuleLoad", CUDA_VERSION);
-    ok &= loadProc(cuModuleUnload_, "cuModuleUnload", CUDA_VERSION);
-    ok &= loadProc(cuModuleGetFunction_, "cuModuleGetFunction", CUDA_VERSION);
-    ok &= loadProc(cuMemAlloc_, "cuMemAlloc", CUDA_VERSION);
-    ok &= loadProc(cuMemcpyHtoD_, "cuMemcpyHtoD", CUDA_VERSION);
-    ok &= loadProc(cuMemcpyDtoH_, "cuMemcpyDtoH", CUDA_VERSION);
-    ok &= loadProc(cuMemFree_, "cuMemFree", CUDA_VERSION);
-    ok &= loadProc(cuLaunchKernel_, "cuLaunchKernel", CUDA_VERSION);
+    ok &= loadProc(cuCtxSetCurrent_, "cuCtxSetCurrent", cuda_version);
+    ok &= loadProc(cuCtxGetCurrent_, "cuCtxGetCurrent", cuda_version);
+    ok &= loadProc(cuCtxDestroy_, "cuCtxDestroy", cuda_version);
+    ok &= loadProc(cuCtxSynchronize_, "cuCtxSynchronize", cuda_version);
+
+    ok &= loadProc(cuStreamCreate_, "cuStreamCreate", cuda_version);
+    ok &= loadProc(cuStreamDestroy_, "cuStreamDestroy", cuda_version);
+    ok &= loadProc(cuStreamSynchronize_, "cuStreamSynchronize", cuda_version);
+
+    ok &= loadProc(cuModuleLoad_, "cuModuleLoad", cuda_version);
+    ok &= loadProc(cuModuleUnload_, "cuModuleUnload", cuda_version);
+    ok &= loadProc(cuModuleGetFunction_, "cuModuleGetFunction", cuda_version);
+    ok &= loadProc(cuMemAlloc_, "cuMemAlloc", cuda_version);
+    ok &= loadProc(cuMemcpyHtoD_, "cuMemcpyHtoD", cuda_version);
+    ok &= loadProc(cuMemcpyDtoH_, "cuMemcpyDtoH", cuda_version);
+    ok &= loadProc(cuMemFree_, "cuMemFree", cuda_version);
+    ok &= loadProc(cuLaunchKernel_, "cuLaunchKernel", cuda_version);
 
     return ok;
   }
