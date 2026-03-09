@@ -95,6 +95,8 @@ public:
     if (it != contexts_.end()) {
       return it->second;
     }
+    VIENNACORE_LOG_ERROR("Context for device " + std::to_string(deviceID) +
+                         " not found in registry.");
     return nullptr;
   }
 
