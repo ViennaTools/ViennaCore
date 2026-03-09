@@ -17,8 +17,40 @@
 
 namespace viennacore {
 
+#ifdef VIENNACORE_LINK_CUDA_DRIVER
 struct CudaHandle {
-  int cuda_version;
+  bool isLoaded() const { return true; }
+
+  PFN_cuInit cuInit_ = &cuInit;
+  PFN_cuDeviceGetCount cuDeviceGetCount_ = &cuDeviceGetCount;
+  PFN_cuDeviceGet cuDeviceGet_ = &cuDeviceGet;
+  PFN_cuDeviceGetName cuDeviceGetName_ = &cuDeviceGetName;
+
+  // Use explicit versioned typedef here to avoid ambiguity.
+  PFN_cuCtxCreate_v3020 cuCtxCreate_ = &cuCtxCreate_v2;
+
+  PFN_cuCtxSetCurrent cuCtxSetCurrent_ = &cuCtxSetCurrent;
+  PFN_cuCtxGetCurrent cuCtxGetCurrent_ = &cuCtxGetCurrent;
+  PFN_cuCtxDestroy cuCtxDestroy_ = &cuCtxDestroy;
+  PFN_cuCtxSynchronize cuCtxSynchronize_ = &cuCtxSynchronize;
+
+  PFN_cuStreamCreate cuStreamCreate_ = &cuStreamCreate;
+  PFN_cuStreamDestroy cuStreamDestroy_ = &cuStreamDestroy;
+  PFN_cuStreamSynchronize cuStreamSynchronize_ = &cuStreamSynchronize;
+
+  PFN_cuModuleLoad cuModuleLoad_ = &cuModuleLoad;
+  PFN_cuModuleUnload cuModuleUnload_ = &cuModuleUnload;
+  PFN_cuModuleGetFunction cuModuleGetFunction_ = &cuModuleGetFunction;
+  PFN_cuMemAlloc cuMemAlloc_ = &cuMemAlloc;
+  PFN_cuMemcpyHtoD cuMemcpyHtoD_ = &cuMemcpyHtoD;
+  PFN_cuMemcpyDtoH cuMemcpyDtoH_ = &cuMemcpyDtoH;
+  PFN_cuMemFree cuMemFree_ = &cuMemFree;
+  PFN_cuLaunchKernel cuLaunchKernel_ = &cuLaunchKernel;
+};
+
+#else
+struct CudaHandle {
+  const int cuda_version;
   void *handle = nullptr;
 
   // cuGetProcAddress itself is loaded from the driver library once.
@@ -67,7 +99,11 @@ struct CudaHandle {
         handle = hModule;
         VIENNACORE_LOG_DEBUG("Successfully loaded CUDA driver library: " +
                              std::string(name));
-        load();
+        if (!load()) {
+          VIENNACORE_LOG_WARNING("Failed to load CUDA driver symbols.");
+          FreeLibrary(static_cast<HMODULE>(handle));
+          handle = nullptr;
+        }
         return;
       }
     }
@@ -79,7 +115,11 @@ struct CudaHandle {
       if (handle) {
         VIENNACORE_LOG_DEBUG("Successfully loaded CUDA driver library: " +
                              std::string(name));
-        load();
+        if (!load()) {
+          VIENNACORE_LOG_WARNING("Failed to load CUDA driver symbols.");
+          dlclose(handle);
+          handle = nullptr;
+        }
         return;
       }
     }
@@ -103,6 +143,11 @@ struct CudaHandle {
 
 private:
   template <class Fn> Fn loadDriverExport(const char *symbol) const {
+    if (!handle) {
+      VIENNACORE_LOG_ERROR("CUDA driver library not loaded.");
+      return nullptr;
+    }
+
 #ifdef _WIN32
     auto *p = GetProcAddress(static_cast<HMODULE>(handle), symbol);
     if (!p) {
@@ -191,6 +236,7 @@ private:
     return ok;
   }
 };
+#endif
 
 } // namespace viennacore
 

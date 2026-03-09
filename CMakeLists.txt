@@ -11,6 +11,7 @@ project(
 option(VIENNACORE_USE_OPENMP "Enable OpenMP parallelization" ON)
 option(VIENNACORE_USE_GPU "Enable NVIDIA GPU support" OFF)
 option(VIENNACORE_ENABLE_SANITIZER "Enable Sanitizers" OFF)
+option(VIENNACORE_LINK_CUDA_DRIVER "Link against CUDA Driver API (instead of loading at runtime)" OFF)
 option(VIENNACORE_CUDA_LOG_DEBUG "Enable CUDA debug logging" OFF)
 option(VIENNACORE_CUDA_USE_NATIVE_SM "Compile CUDA code for native SM architecture" OFF)
 
@@ -148,6 +149,12 @@ if(VIENNACORE_USE_GPU)
     # OptiX found via system or OptiX_INSTALL_DIR: use as-is for both interfaces
     target_include_directories(${PROJECT_NAME} INTERFACE ${OptiX_INCLUDE_DIR})
   endif()
+
+  if (VIENNACORE_LINK_CUDA_DRIVER)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_LINK_CUDA_DRIVER=1)
+    target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver)
+  endif()
+
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
   target_compile_definitions(
     ${PROJECT_NAME}

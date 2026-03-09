@@ -15,7 +15,10 @@ namespace viennacore {
 
 /// simple wrapper for creating, and managing a device-side CUDA buffer
 struct CudaBuffer {
-  CudaBuffer() : context(*DeviceContextRegistry::getInstance().getContext(0)) {}
+  CudaBuffer() : context(DeviceContextRegistry::getInstance().getContext(0)) {
+    assert(context->foundCuda() &&
+           "CUDA driver not found, cannot create CudaBuffer.");
+  }
 
   CudaBuffer(const CudaBuffer &other) : context(other.context) {
     // Create a new buffer that shares the same device pointer and size, but
@@ -62,7 +65,7 @@ struct CudaBuffer {
       assert(sizeInBytes == 0);
       return;
     }
-    CUDA_CHECK(context.ch.cuMemFree_(d_ptr));
+    CUDA_CHECK(context->ch.cuMemFree_(d_ptr));
 #ifndef NDEBUG
     --allocFreeCount;
 #endif
@@ -74,7 +77,7 @@ struct CudaBuffer {
   void alloc(size_t size) {
     if (d_ptr != 0) {
       // Free existing memory (also if this buffer is a reference)
-      CUDA_CHECK(context.ch.cuMemFree_(d_ptr));
+      CUDA_CHECK(context->ch.cuMemFree_(d_ptr));
 #ifndef NDEBUG
       --allocFreeCount;
 #endif
@@ -83,7 +86,7 @@ struct CudaBuffer {
     }
 
     sizeInBytes = size;
-    CUDA_CHECK(context.ch.cuMemAlloc_(&d_ptr, sizeInBytes));
+    CUDA_CHECK(context->ch.cuMemAlloc_(&d_ptr, sizeInBytes));
 #ifndef NDEBUG
     ++allocFreeCount;
 #endif
@@ -94,7 +97,8 @@ struct CudaBuffer {
     assert(sizeInBytes == count * sizeof(T));
     // Create host buffer filled with init value and copy to device
     std::vector<T> initBuffer(count, init);
-    CUDA_CHECK(context.ch.cuMemcpyHtoD_(d_ptr, initBuffer.data(), sizeInBytes));
+    CUDA_CHECK(
+        context->ch.cuMemcpyHtoD_(d_ptr, initBuffer.data(), sizeInBytes));
   }
 
   template <typename T> void allocInit(size_t size, const T init) {
@@ -105,7 +109,7 @@ struct CudaBuffer {
   template <typename T> void upload(const T *t, size_t count) {
     assert(d_ptr != 0);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(context.ch.cuMemcpyHtoD_(d_ptr, (void *)t, count * sizeof(T)));
+    CUDA_CHECK(context->ch.cuMemcpyHtoD_(d_ptr, (void *)t, count * sizeof(T)));
   }
 
   template <typename T> void allocUpload(const std::vector<T> &vt) {
@@ -121,10 +125,10 @@ struct CudaBuffer {
   template <typename T> void download(T *t, size_t count) {
     assert(d_ptr != 0);
     assert(sizeInBytes == count * sizeof(T));
-    CUDA_CHECK(context.ch.cuMemcpyDtoH_((void *)t, d_ptr, count * sizeof(T)));
+    CUDA_CHECK(context->ch.cuMemcpyDtoH_((void *)t, d_ptr, count * sizeof(T)));
   }
 
-  DeviceContext &context;
+  std::shared_ptr<DeviceContext> context;
   size_t sizeInBytes{0};
   CUdeviceptr d_ptr{0};
   bool isRef = false;
