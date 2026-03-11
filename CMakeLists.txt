@@ -153,6 +153,10 @@ if(VIENNACORE_USE_GPU)
   if (VIENNACORE_LINK_CUDA_DRIVER)
     target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_LINK_CUDA_DRIVER=1)
     target_link_libraries(${PROJECT_NAME} INTERFACE CUDA::cuda_driver)
+  else()
+    # If not linking against the CUDA Driver API, we still need the CUDA headers
+    message(STATUS "[ViennaCore] Loading CUDA Driver at runtime (no direct linkage)")
+    target_include_directories(${PROJECT_NAME} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
   endif()
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
