@@ -157,6 +157,7 @@ if(VIENNACORE_USE_GPU)
     # If not linking against the CUDA Driver API, we still need the CUDA headers
     message(STATUS "[ViennaCore] Loading CUDA Driver at runtime (no direct linkage)")
     target_include_directories(${PROJECT_NAME} INTERFACE ${CUDAToolkit_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} INTERFACE ${CMAKE_DL_LIBS}) # For dlopen on Unix-like systems
   endif()
 
   target_compile_definitions(${PROJECT_NAME} INTERFACE VIENNACORE_COMPILE_GPU=1)
