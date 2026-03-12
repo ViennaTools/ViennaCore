@@ -184,6 +184,10 @@ struct DeviceContext {
     auto context = std::make_shared<DeviceContext>();
     context->create(modulePath, deviceID);
 
+    if (!context->foundCuda()) {
+      return nullptr;
+    }
+
     if (registerInGlobal) {
       DeviceContextRegistry::getInstance().registerContext(deviceID, context);
       VIENNACORE_LOG_DEBUG("Context for device " + std::to_string(deviceID) +
