@@ -7,7 +7,7 @@
 #include <string>
 
 #ifdef VIENNACORE_COMPILE_GPU
-#include <cuda.h>
+#include "vcChecks.hpp"
 #endif
 
 #define TM_RED "\033[1;31m"

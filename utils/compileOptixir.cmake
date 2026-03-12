@@ -70,12 +70,18 @@ function(viennacore_add_optixir target_name cu_file)
     set(arch_flag "-gencode=code=sm_${VIENNACORE_CUDA_ARCH},arch=compute_${VIENNACORE_CUDA_ARCH}")
   endif()
 
+  if(CMAKE_CUDA_HOST_COMPILER)
+    set(_cuda_host_compiler "${CMAKE_CUDA_HOST_COMPILER}")
+  else()
+    set(_cuda_host_compiler "${CMAKE_CXX_COMPILER}")
+  endif()
+
   add_custom_command(
     OUTPUT "${optixir_out}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_NVCC_PTX_DIR}"
-    COMMAND "${CMAKE_CUDA_COMPILER}" --optix-ir -std=c++17 ${arch_flag} ${VIENNACORE_NVCC_FLAGS}
-            ${nvcc_includes} "${cu_file}" -o "${optixir_out}"
+    COMMAND "${CMAKE_CUDA_COMPILER}" -ccbin=${_cuda_host_compiler} --optix-ir -std=c++17
+            ${arch_flag} ${VIENNACORE_NVCC_FLAGS} ${nvcc_includes} "${cu_file}" -o "${optixir_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${optixir_out}" "${optixir_dst}"
     DEPENDS "${cu_file}" ${additional_deps}
     VERBATIM

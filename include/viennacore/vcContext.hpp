@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "vcChecks.hpp"
+#include "vcCudaHandle.hpp"
 #include "vcLogger.hpp"
 
 #define STRINGIFY_HELPER(X) #X
@@ -94,6 +95,8 @@ public:
     if (it != contexts_.end()) {
       return it->second;
     }
+    VIENNACORE_LOG_WARNING("Context for device " + std::to_string(deviceID) +
+                           " not found in registry.");
     return nullptr;
   }
 
@@ -142,34 +145,184 @@ private:
 
 struct DeviceContext {
   // Static factory methods for creating and managing contexts
+  static int defaultDevieId;
+
   static std::shared_ptr<DeviceContext>
   createContext(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
-                const int deviceID = 0, bool registerInGlobal = true);
+                int deviceID = -1, bool registerInGlobal = true) {
+    if (deviceID == -1)
+      deviceID = defaultDevieId;
 
-  static std::shared_ptr<DeviceContext> getContextFromRegistry(int deviceID);
+    // Check if context already exists for this device
+    if (registerInGlobal &&
+        DeviceContextRegistry::getInstance().hasContext(deviceID)) {
+      VIENNACORE_LOG_WARNING(
+          "Context for device " + std::to_string(deviceID) +
+          " already exists in registry. Returning existing context.");
+      return DeviceContextRegistry::getInstance().getContext(deviceID);
+    }
 
-  static bool hasContextInRegistry(int deviceID);
+#ifdef VIENNACORE_DYNAMIC_MODULE_PATH
+    // If a dynamic modules path is specified (at build or runtime), adjust
+    // the modulePath to be relative to the current module's location
+#ifdef _WIN32
+    HMODULE hModule = GetModuleHandle(NULL);
+    char path[MAX_PATH];
+    GetModuleFileNameA(hModule, path, MAX_PATH);
+    std::filesystem::path mPath = std::filesystem::path(path).parent_path();
+    modulePath = mPath / modulePath;
+#else
+    Dl_info info;
+    // Get the address of this function to locate our own module
+    if (dladdr((void *)&createContext, &info) && info.dli_fname) {
+      auto mPath = std::filesystem::path(info.dli_fname).parent_path();
+      modulePath = mPath / modulePath;
+    }
+#endif
+#endif
 
-  static std::vector<int> getRegisteredDeviceIDs();
+    auto context = std::make_shared<DeviceContext>();
+    context->create(modulePath, deviceID);
+
+    if (!context->foundCuda()) {
+      return nullptr;
+    }
+
+    if (registerInGlobal) {
+      DeviceContextRegistry::getInstance().registerContext(deviceID, context);
+      VIENNACORE_LOG_DEBUG("Context for device " + std::to_string(deviceID) +
+                           " registered in global registry.");
+    }
+
+    return context;
+  }
+
+  static std::shared_ptr<DeviceContext>
+  getContextFromRegistry(int deviceID = -1) {
+    if (deviceID == -1) {
+      deviceID = defaultDevieId;
+    }
+    return DeviceContextRegistry::getInstance().getContext(deviceID);
+  }
+
+  static bool hasContextInRegistry(int deviceID) {
+    return DeviceContextRegistry::getInstance().hasContext(deviceID);
+  }
+
+  static std::vector<int> getRegisteredDeviceIDs() {
+    return DeviceContextRegistry::getInstance().getRegisteredDeviceIDs();
+  }
 
   // Instance methods
-  void create(std::filesystem::path modulePath = VIENNACORE_KERNELS_PATH,
-              const int deviceID = 0);
-  CUmodule getModule(const std::string &moduleName);
-  void addModule(const std::string &moduleName);
+  void create(std::filesystem::path modulePath, const int deviceID) {
+    if (!ch.isLoaded()) {
+      // CUDA driver not available, context cannot be created.
+      VIENNACORE_LOG_WARNING(
+          "CUDA driver not available, context cannot be created.");
+      return;
+    }
+
+    // create new context
+    this->modulePath = modulePath;
+    this->deviceID = deviceID;
+
+    // initialize CUDA driver API (cuda.h)
+    CUDA_CHECK(ch.cuInit_(0));
+
+    int numDevices;
+    CUDA_CHECK(ch.cuDeviceGetCount_(&numDevices));
+    if (numDevices == 0) {
+      VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
+      return;
+    }
+
+    if (deviceID < 0 || deviceID >= numDevices) {
+      VIENNACORE_LOG_ERROR(
+          "Invalid CUDA device ID " + std::to_string(deviceID) + ", only " +
+          std::to_string(numDevices) + " device(s) available.");
+      return;
+    }
+
+    CUdevice device;
+    CUDA_CHECK(ch.cuDeviceGet_(&device, deviceID));
+
+    // Get device name
+    char deviceNameBuffer[256];
+    CUDA_CHECK(ch.cuDeviceGetName_(deviceNameBuffer, 256, device));
+    deviceName = deviceNameBuffer;
+    VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
+
+    // Create CUDA device context
+    CUDA_CHECK(ch.cuCtxCreate_(&cuda, 0, device));
+
+    // Test that context is functional by allocating and freeing a small amount
+    // of memory
+    CUdeviceptr d_ptr;
+    CUDA_CHECK(ch.cuMemAlloc_(&d_ptr, 1));
+    assert(d_ptr != 0);
+    CUDA_CHECK(ch.cuMemFree_(d_ptr));
+
+    // add default modules
+    VIENNACORE_LOG_DEBUG("PTX kernels path: " + modulePath.string());
+    // no default modules for now
+
+    // initialize OptiX context
+    OPTIX_CHECK(optixInit());
+
+    OPTIX_CHECK(optixDeviceContextCreate(cuda, 0, &optix));
+    optixDeviceContextSetLogCallback(optix, contextLogCallback, nullptr, 4);
+  }
+
+  CUmodule getModule(const std::string &moduleName) {
+    int idx = -1;
+    for (int i = 0; i < modules.size(); i++) {
+      if (this->moduleNames[i] == moduleName) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx < 0) {
+      VIENNACORE_LOG_ERROR("Module " + moduleName + " not in context.");
+    }
+
+    return modules[idx];
+  }
+
+  void addModule(const std::string &moduleName) {
+    if (deviceID == -1) {
+      VIENNACORE_LOG_ERROR(
+          "Context not initialized. Use 'create' to initialize context.");
+    }
+
+    // Check if module already loaded
+    if (std::find(moduleNames.begin(), moduleNames.end(), moduleName) !=
+        moduleNames.end()) {
+      return;
+    }
+
+    CUmodule module;
+    const std::string p = (modulePath / moduleName).string();
+    ch.cuModuleLoad_(&module, p.c_str());
+
+    modules.push_back(module);
+    moduleNames.push_back(moduleName);
+  }
+
   std::string getModulePath() const { return modulePath.string(); }
   std::string getDeviceName() const { return deviceName; }
   int getDeviceID() const { return deviceID; }
+  bool foundCuda() const { return ch.isLoaded(); }
+  void sync() const { ch.cuCtxSynchronize_(); }
 
   void destroy() {
     if (deviceID == -1)
       return;
 
     for (auto module : modules) {
-      cuModuleUnload(module);
+      ch.cuModuleUnload_(module);
     }
     optixDeviceContextDestroy(optix);
-    cuCtxDestroy(cuda);
+    ch.cuCtxDestroy_(cuda);
 
     // Unregister from global registry
     DeviceContextRegistry::getInstance().unregisterContext(deviceID);
@@ -181,142 +334,13 @@ struct DeviceContext {
   std::vector<std::string> moduleNames;
   std::vector<CUmodule> modules;
 
+  CudaHandle ch;
   CUcontext cuda;
   std::string deviceName;
   OptixDeviceContext optix;
   int deviceID = -1;
 };
 
-inline CUmodule DeviceContext::getModule(const std::string &moduleName) {
-  int idx = -1;
-  for (int i = 0; i < modules.size(); i++) {
-    if (this->moduleNames[i] == moduleName) {
-      idx = i;
-      break;
-    }
-  }
-  if (idx < 0) {
-    VIENNACORE_LOG_ERROR("Module " + moduleName + " not in context.");
-  }
-
-  return modules[idx];
-}
-
-inline void DeviceContext::addModule(const std::string &moduleName) {
-  if (deviceID == -1) {
-    VIENNACORE_LOG_ERROR(
-        "Context not initialized. Use 'create' to initialize context.");
-  }
-
-  // Check if module already loaded
-  if (std::find(moduleNames.begin(), moduleNames.end(), moduleName) !=
-      moduleNames.end()) {
-    return;
-  }
-
-  CUmodule module;
-  const std::string p = (modulePath / moduleName).string();
-  CUDA_CHECK(cuModuleLoad(&module, p.c_str()));
-
-  modules.push_back(module);
-  moduleNames.push_back(moduleName);
-}
-
-inline void DeviceContext::create(std::filesystem::path modulePath,
-                                  const int deviceID) {
-
-  // create new context
-  this->modulePath = modulePath;
-  this->deviceID = deviceID;
-
-  // initialize CUDA **driver** API (cu## prefix, cuda.h)
-  CUDA_CHECK(cuInit(0));
-
-  int numDevices;
-  CUDA_CHECK(cuDeviceGetCount(&numDevices));
-  if (numDevices == 0) {
-    VIENNACORE_LOG_ERROR("No CUDA capable devices found!");
-  }
-
-  CUdevice device;
-  CUDA_CHECK(cuDeviceGet(&device, deviceID));
-
-  // Get device name
-  char deviceNameBuffer[256];
-  CUDA_CHECK(cuDeviceGetName(deviceNameBuffer, 256, device));
-  deviceName = deviceNameBuffer;
-  VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
-
-  // Create CUDA device context
-  CUDA_CHECK(cuCtxCreate(&cuda, 0, device));
-
-  // add default modules
-  VIENNACORE_LOG_DEBUG("PTX kernels path: " + modulePath.string());
-  // no default modules for now
-
-  // initialize OptiX context
-  OPTIX_CHECK(optixInit());
-
-  optixDeviceContextCreate(cuda, 0, &optix);
-  optixDeviceContextSetLogCallback(optix, contextLogCallback, nullptr, 4);
-}
-
-// Static factory method implementations
-inline std::shared_ptr<DeviceContext>
-DeviceContext::createContext(std::filesystem::path modulePath,
-                             const int deviceID, bool registerInGlobal) {
-
-  // Check if context already exists for this device
-  if (registerInGlobal &&
-      DeviceContextRegistry::getInstance().hasContext(deviceID)) {
-    VIENNACORE_LOG_WARNING(
-        "Context for device " + std::to_string(deviceID) +
-        " already exists in registry. Returning existing context.");
-    return DeviceContextRegistry::getInstance().getContext(deviceID);
-  }
-
-#ifdef VIENNACORE_DYNAMIC_MODULE_PATH
-// If a dynamic modules path is specified (at build or runtime), adjust the
-// modulePath to be relative to the current module's location
-#ifdef _WIN32
-  HMODULE hModule = GetModuleHandle(NULL);
-  char path[MAX_PATH];
-  GetModuleFileNameA(hModule, path, MAX_PATH);
-  std::filesystem::path mPath = std::filesystem::path(path).parent_path();
-  modulePath = mPath / modulePath;
-#else
-  Dl_info info;
-  // Get the address of this function to locate our own module
-  if (dladdr((void *)&createContext, &info) && info.dli_fname) {
-    auto mPath = std::filesystem::path(info.dli_fname).parent_path();
-    modulePath = mPath / modulePath;
-  }
-#endif
-#endif
-
-  auto context = std::make_shared<DeviceContext>();
-  context->create(modulePath, deviceID);
-
-  if (registerInGlobal) {
-    DeviceContextRegistry::getInstance().registerContext(deviceID, context);
-    VIENNACORE_LOG_DEBUG("Context for device " + std::to_string(deviceID) +
-                         " registered in global registry.");
-  }
-
-  return context;
-}
-
-inline std::shared_ptr<DeviceContext>
-DeviceContext::getContextFromRegistry(int deviceID) {
-  return DeviceContextRegistry::getInstance().getContext(deviceID);
-}
-
-inline bool DeviceContext::hasContextInRegistry(int deviceID) {
-  return DeviceContextRegistry::getInstance().hasContext(deviceID);
-}
-
-inline std::vector<int> DeviceContext::getRegisteredDeviceIDs() {
-  return DeviceContextRegistry::getInstance().getRegisteredDeviceIDs();
-}
+inline int DeviceContext::defaultDevieId = 0;
 
 } // namespace viennacore
