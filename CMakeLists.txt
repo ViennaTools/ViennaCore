@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 2.1.0)
+  VERSION 2.1.1)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
@@ -27,7 +27,6 @@ set(VIENNACORE_FORMAT_EXCLUDE
 # --------------------------------------------------------------------------------------------------------
 
 add_library(${PROJECT_NAME} INTERFACE)
-add_library(ViennaTools::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
