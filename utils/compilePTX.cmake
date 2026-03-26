@@ -79,7 +79,7 @@ function(viennacore_add_ptx target_name cu_file)
     OUTPUT "${ptx_out}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
     COMMAND "${CMAKE_COMMAND}" -E make_directory "${VIENNACORE_NVCC_PTX_DIR}"
-    COMMAND "${CMAKE_CUDA_COMPILER}" -ccbin=${_cuda_host_compiler} --ptx -std=c++17 ${arch_flag}
+    COMMAND "${CMAKE_CUDA_COMPILER}" -ccbin=${_cuda_host_compiler} --ptx -std=c++20 ${arch_flag}
             ${VIENNACORE_NVCC_FLAGS} ${nvcc_includes} "${cu_file}" -o "${ptx_out}"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${ptx_out}" "${ptx_dst}"
     DEPENDS "${cu_file}" ${additional_deps}
