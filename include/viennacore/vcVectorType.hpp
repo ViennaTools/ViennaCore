@@ -287,6 +287,22 @@ __both__ VectorType<T, D> Max(const VectorType<T, D> &v1,
 }
 
 template <class T, size_t D>
+__both__ VectorType<T, D> Abs(const VectorType<T, D> &v1) noexcept {
+  VectorType<T, D> v;
+  for (size_t i = 0; i < D; i++)
+    v[i] = std::abs(v1[i]);
+  return v;
+}
+
+template <class T, size_t D>
+__both__ T MinElement(const VectorType<T, D> &v1) noexcept {
+  T v = v1[0];
+  for (size_t i = 1; i < D; i++)
+    v = std::min(v1[i], v);
+  return v;
+}
+
+template <class T, size_t D>
 __both__ T MaxElement(const VectorType<T, D> &v1) noexcept {
   T v = v1[0];
   for (size_t i = 1; i < D; i++)
