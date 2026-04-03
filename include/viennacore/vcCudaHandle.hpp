@@ -3,38 +3,45 @@
 #ifdef VIENNACORE_COMPILE_GPU
 
 #include <cuda.h>
+
+#ifndef VIENNACORE_LINK_CUDA_DRIVER
 #include <cudaTypedefs.h>
+#endif
 
 #ifdef VIENNACORE_LINK_CUDA_DRIVER
 namespace viennacore {
 struct CudaHandle {
   bool isLoaded() const { return true; }
 
-  PFN_cuInit cuInit_ = &cuInit;
-  PFN_cuDeviceGetCount cuDeviceGetCount_ = &cuDeviceGetCount;
-  PFN_cuDeviceGet cuDeviceGet_ = &cuDeviceGet;
-  PFN_cuDeviceGetName cuDeviceGetName_ = &cuDeviceGetName;
+  decltype(&::cuInit) cuInit_ = &cuInit;
+  decltype(&::cuDeviceGetCount) cuDeviceGetCount_ = &cuDeviceGetCount;
+  decltype(&::cuDeviceGet) cuDeviceGet_ = &cuDeviceGet;
+  decltype(&::cuDeviceGetName) cuDeviceGetName_ = &cuDeviceGetName;
 
   // Use explicit versioned typedef here to avoid ambiguity.
-  PFN_cuCtxCreate_v3020 cuCtxCreate_ = &cuCtxCreate_v2;
+  decltype(&cuCtxCreate) cuCtxCreate_ = &cuCtxCreate;
 
-  PFN_cuCtxSetCurrent cuCtxSetCurrent_ = &cuCtxSetCurrent;
-  PFN_cuCtxGetCurrent cuCtxGetCurrent_ = &cuCtxGetCurrent;
-  PFN_cuCtxDestroy cuCtxDestroy_ = &cuCtxDestroy;
-  PFN_cuCtxSynchronize cuCtxSynchronize_ = &cuCtxSynchronize;
+  decltype(&::cuCtxSetCurrent) cuCtxSetCurrent_ = &cuCtxSetCurrent;
+  decltype(&::cuCtxGetCurrent) cuCtxGetCurrent_ = &cuCtxGetCurrent;
+  decltype(&::cuCtxDestroy) cuCtxDestroy_ = &cuCtxDestroy;
+  decltype(&::cuCtxSynchronize) cuCtxSynchronize_ = &cuCtxSynchronize;
 
-  PFN_cuStreamCreate cuStreamCreate_ = &cuStreamCreate;
-  PFN_cuStreamDestroy cuStreamDestroy_ = &cuStreamDestroy;
-  PFN_cuStreamSynchronize cuStreamSynchronize_ = &cuStreamSynchronize;
+  decltype(&::cuStreamCreate) cuStreamCreate_ = &cuStreamCreate;
+  decltype(&::cuStreamDestroy) cuStreamDestroy_ = &cuStreamDestroy;
+  decltype(&::cuStreamSynchronize) cuStreamSynchronize_ = &cuStreamSynchronize;
 
-  PFN_cuModuleLoad cuModuleLoad_ = &cuModuleLoad;
-  PFN_cuModuleUnload cuModuleUnload_ = &cuModuleUnload;
-  PFN_cuModuleGetFunction cuModuleGetFunction_ = &cuModuleGetFunction;
-  PFN_cuMemAlloc cuMemAlloc_ = &cuMemAlloc;
-  PFN_cuMemcpyHtoD cuMemcpyHtoD_ = &cuMemcpyHtoD;
-  PFN_cuMemcpyDtoH cuMemcpyDtoH_ = &cuMemcpyDtoH;
-  PFN_cuMemFree cuMemFree_ = &cuMemFree;
-  PFN_cuLaunchKernel cuLaunchKernel_ = &cuLaunchKernel;
+  decltype(&::cuModuleLoad) cuModuleLoad_ = &cuModuleLoad;
+  decltype(&::cuModuleUnload) cuModuleUnload_ = &cuModuleUnload;
+  decltype(&::cuModuleGetFunction) cuModuleGetFunction_ = &cuModuleGetFunction;
+  decltype(&::cuMemAlloc) cuMemAlloc_ = &cuMemAlloc;
+  decltype(&::cuMemcpyHtoD) cuMemcpyHtoD_ = &cuMemcpyHtoD;
+  decltype(&::cuMemcpyDtoH) cuMemcpyDtoH_ = &cuMemcpyDtoH;
+  decltype(&::cuMemFree) cuMemFree_ = &cuMemFree;
+  decltype(&::cuLaunchKernel) cuLaunchKernel_ = &cuLaunchKernel;
+
+  CUresult createContext(CUcontext *ctx, unsigned int flags, CUdevice dev) {
+    return cuCtxCreate_(ctx, nullptr, flags, dev);
+  }
 };
 } // namespace viennacore
 #else
@@ -59,31 +66,31 @@ struct CudaHandle {
 
   CuGetProcAddressFn cuGetProcAddress_ = nullptr;
 
-  PFN_cuInit cuInit_ = nullptr;
-  PFN_cuDeviceGetCount cuDeviceGetCount_ = nullptr;
-  PFN_cuDeviceGet cuDeviceGet_ = nullptr;
-  PFN_cuDeviceGetName cuDeviceGetName_ = nullptr;
+  decltype(&::cuInit) cuInit_ = nullptr;
+  decltype(&::cuDeviceGetCount) cuDeviceGetCount_ = nullptr;
+  decltype(&::cuDeviceGet) cuDeviceGet_ = nullptr;
+  decltype(&::cuDeviceGetName) cuDeviceGetName_ = nullptr;
 
   // Use explicit versioned typedef here to avoid ambiguity.
   PFN_cuCtxCreate_v3020 cuCtxCreate_ = nullptr;
 
-  PFN_cuCtxSetCurrent cuCtxSetCurrent_ = nullptr;
-  PFN_cuCtxGetCurrent cuCtxGetCurrent_ = nullptr;
-  PFN_cuCtxDestroy cuCtxDestroy_ = nullptr;
-  PFN_cuCtxSynchronize cuCtxSynchronize_ = nullptr;
+  decltype(&::cuCtxSetCurrent) cuCtxSetCurrent_ = nullptr;
+  decltype(&::cuCtxGetCurrent) cuCtxGetCurrent_ = nullptr;
+  decltype(&::cuCtxDestroy) cuCtxDestroy_ = nullptr;
+  decltype(&::cuCtxSynchronize) cuCtxSynchronize_ = nullptr;
 
-  PFN_cuStreamCreate cuStreamCreate_ = nullptr;
-  PFN_cuStreamDestroy cuStreamDestroy_ = nullptr;
-  PFN_cuStreamSynchronize cuStreamSynchronize_ = nullptr;
+  decltype(&::cuStreamCreate) cuStreamCreate_ = nullptr;
+  decltype(&::cuStreamDestroy) cuStreamDestroy_ = nullptr;
+  decltype(&::cuStreamSynchronize) cuStreamSynchronize_ = nullptr;
 
-  PFN_cuModuleLoad cuModuleLoad_ = nullptr;
-  PFN_cuModuleUnload cuModuleUnload_ = nullptr;
-  PFN_cuModuleGetFunction cuModuleGetFunction_ = nullptr;
-  PFN_cuMemAlloc cuMemAlloc_ = nullptr;
-  PFN_cuMemcpyHtoD cuMemcpyHtoD_ = nullptr;
-  PFN_cuMemcpyDtoH cuMemcpyDtoH_ = nullptr;
-  PFN_cuMemFree cuMemFree_ = nullptr;
-  PFN_cuLaunchKernel cuLaunchKernel_ = nullptr;
+  decltype(&::cuModuleLoad) cuModuleLoad_ = nullptr;
+  decltype(&::cuModuleUnload) cuModuleUnload_ = nullptr;
+  decltype(&::cuModuleGetFunction) cuModuleGetFunction_ = nullptr;
+  decltype(&::cuMemAlloc) cuMemAlloc_ = nullptr;
+  decltype(&::cuMemcpyHtoD) cuMemcpyHtoD_ = nullptr;
+  decltype(&::cuMemcpyDtoH) cuMemcpyDtoH_ = nullptr;
+  decltype(&::cuMemFree) cuMemFree_ = nullptr;
+  decltype(&::cuLaunchKernel) cuLaunchKernel_ = nullptr;
 
   CudaHandle(int version = CUDA_VERSION) : cuda_version(version) {
 #ifdef VIENNACORE_FORCE_NOLOAD_CUDA
@@ -139,6 +146,10 @@ struct CudaHandle {
   }
 
   bool isLoaded() const { return handle != nullptr; }
+
+    CUresult createContext(CUcontext *ctx, unsigned int flags, CUdevice dev) {
+    return cuCtxCreate_(ctx, flags, dev);
+   }
 
 private:
   template <class Fn> Fn loadDriverExport(const char *symbol) const {
