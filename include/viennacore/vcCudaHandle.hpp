@@ -40,7 +40,11 @@ struct CudaHandle {
   decltype(&::cuLaunchKernel) cuLaunchKernel_ = &cuLaunchKernel;
 
   CUresult createContext(CUcontext *ctx, unsigned int flags, CUdevice dev) {
+#if CUDA_VERSION >= 13010
     return cuCtxCreate_(ctx, nullptr, flags, dev);
+#else
+    return cuCtxCreate_(ctx, flags, dev);
+#endif
   }
 };
 } // namespace viennacore
@@ -147,9 +151,9 @@ struct CudaHandle {
 
   bool isLoaded() const { return handle != nullptr; }
 
-    CUresult createContext(CUcontext *ctx, unsigned int flags, CUdevice dev) {
+  CUresult createContext(CUcontext *ctx, unsigned int flags, CUdevice dev) {
     return cuCtxCreate_(ctx, flags, dev);
-   }
+  }
 
 private:
   template <class Fn> Fn loadDriverExport(const char *symbol) const {

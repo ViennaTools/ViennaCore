@@ -21,7 +21,7 @@ int main() {
 
   // Create a new context for the device
   CUcontext context;
-  handle.createContext(&context, 0, device); 
+  handle.createContext(&context, 0, device);
 
   std::cout << "Successfully created context: " << context << std::endl;
 
