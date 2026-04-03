@@ -95,8 +95,6 @@ public:
     if (it != contexts_.end()) {
       return it->second;
     }
-    VIENNACORE_LOG_WARNING("Context for device " + std::to_string(deviceID) +
-                           " not found in registry.");
     return nullptr;
   }
 
@@ -253,7 +251,7 @@ struct DeviceContext {
     VIENNACORE_LOG_DEBUG("Registered context for device: " + deviceName);
 
     // Create CUDA device context
-    CUDA_CHECK(ch.cuCtxCreate_(&cuda, 0, device));
+    CUDA_CHECK(ch.createContext(&cuda, 0, device));
 
     // Test that context is functional by allocating and freeing a small amount
     // of memory
