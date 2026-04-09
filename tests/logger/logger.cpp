@@ -27,6 +27,13 @@ int main() {
   VC_TEST_ASSERT(ss.str().find("    Timing message: 1.23") == 0);
   ss.str("");
 
+  logger.setLogLevel(LogLevel::INTERMEDIATE);
+  logger.addIntermediate("Intermediate message");
+  logger.print(ss);
+
+  VC_TEST_ASSERT(ss.str() == "    Intermediate message\n\033[0m");
+  ss.str("");
+
   logger.setLogLevel(LogLevel::INFO);
   logger.addInfo("Info message");
   logger.print(ss);
