@@ -85,7 +85,9 @@ inline const char *getCudaErrorString(CUresult result) {
   }
 
 #define CUDA_CHECK_NOEXCEPT(call)                                              \
-  { call; }
+  {                                                                            \
+    call;                                                                      \
+  }
 
 #define OPTIX_CHECK(call)                                                      \
   {                                                                            \
