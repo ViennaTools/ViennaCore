@@ -16,8 +16,9 @@ function(viennacore_setup_vtk_env TARGET OUTPUT)
   # We expect all of the VTK binaries to be present in the same directory to which "vtksys" is
   # built. This is currently the case, and has been the case for prior vtk versions - However we
   # should keep an eye on this.
+  # UPDATE: change to VTK::CommonCore target
 
-  viennacore_setup(vtksys ${TARGET} ${OUTPUT})
+  viennacore_setup(VTK::CommonCore ${TARGET} ${OUTPUT})
 endfunction()
 
 function(viennacore_setup_tbb_env TARGET OUTPUT)
