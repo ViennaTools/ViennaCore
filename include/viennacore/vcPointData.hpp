@@ -147,6 +147,12 @@ public:
     vectorDataLabels.resize(numVectorData, "Vectors");
   }
 
+  void addToScalarData(int index, unsigned id, T value) {
+    assert(index >= 0 && index < scalarData.size() &&
+           id < scalarData[index].size());
+    scalarData[index][id] += value;
+  }
+
   /// get the number of different scalar data arrays saved
   unsigned getScalarDataSize() const { return scalarData.size(); }
 
