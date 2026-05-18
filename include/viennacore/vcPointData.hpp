@@ -7,6 +7,7 @@
 
 #include <vcLogger.hpp>
 #include <vcSmartPointer.hpp>
+#include <vcVectorType.hpp>
 
 namespace viennacore {
 
@@ -17,8 +18,8 @@ using IsFloatingPoint =
 /// This class holds data associated with points in space.
 template <class T = double, IsFloatingPoint<T> = nullptr> class PointData {
 public:
-  typedef std::vector<T> ScalarDataType;
-  typedef std::vector<Vec3D<T>> VectorDataType;
+  using ScalarDataType = std::vector<T>;
+  using VectorDataType = std::vector<Vec3D<T>>;
 
 private:
   std::vector<ScalarDataType> scalarData;
@@ -67,6 +68,12 @@ public:
     scalarDataLabels.push_back(label);
   }
 
+  void insertNextScalarData(unsigned numPoints, T initialValue = 0,
+                            const std::string &label = "Scalars") {
+    scalarData.emplace_back(numPoints, initialValue);
+    scalarDataLabels.push_back(label);
+  }
+
   /// insert new vector data array
   void insertNextVectorData(const VectorDataType &vectors,
                             const std::string &label = "Vectors") {
@@ -101,6 +108,15 @@ public:
     }
   }
 
+  void insertReplaceScalarData(unsigned numPoints, T initialValue = 0,
+                               const std::string &label = "Scalars") {
+    if (int i = getScalarDataIndex(label); i != -1) {
+      scalarData[i] = ScalarDataType(numPoints, initialValue);
+    } else {
+      insertNextScalarData(numPoints, initialValue, label);
+    }
+  }
+
   /// insert or replace vector data array
   void insertReplaceVectorData(const VectorDataType &vectors,
                                const std::string &label = "Vectors") {
@@ -121,11 +137,23 @@ public:
     }
   }
 
+  void setNumberOfScalarData(unsigned numScalarData) {
+    scalarData.resize(numScalarData);
+    scalarDataLabels.resize(numScalarData, "Scalars");
+  }
+
+  void setNumberOfVectorData(unsigned numVectorData) {
+    vectorData.resize(numVectorData);
+    vectorDataLabels.resize(numVectorData, "Vectors");
+  }
+
   /// get the number of different scalar data arrays saved
   unsigned getScalarDataSize() const { return scalarData.size(); }
 
   /// get the number of different vector data arrays saved
   unsigned getVectorDataSize() const { return vectorData.size(); }
+
+  auto &getScalarData() { return scalarData; }
 
   ScalarDataType *getScalarData(int index) {
     return indexPointerOrNull(scalarData, index);
@@ -185,6 +213,8 @@ public:
     scalarData.erase(scalarData.begin() + index);
     scalarDataLabels.erase(scalarDataLabels.begin() + index);
   }
+
+  auto &getVectorData() { return vectorData; }
 
   VectorDataType *getVectorData(int index) {
     return indexPointerOrNull(vectorData, index);
@@ -259,7 +289,7 @@ public:
                             passedData.vectorDataLabels.end());
   }
 
-  void merge(const PointData &passedData) {
+  void appendReplace(const PointData &passedData) {
     for (unsigned i = 0; i < passedData.getScalarDataSize(); ++i) {
       insertReplaceScalarData(passedData.scalarData[i],
                               passedData.scalarDataLabels[i]);
@@ -313,6 +343,57 @@ public:
         appendTranslateData(*currentData, source.vectorData[j], i);
       }
     }
+  }
+
+  void mergeScalarData(const PointData &source) {
+    if (source.getScalarDataSize() != scalarData.size()) {
+      VIENNACORE_LOG_WARNING(
+          "PointData: Tried to merge scalar data with different number of "
+          "scalar data sets. No merge performed.");
+      return;
+    }
+
+#pragma omp parallel for
+    for (unsigned i = 0; i < source.getScalarDataSize(); ++i) {
+      if (source.getScalarDataLabel(i) != scalarDataLabels[i]) {
+        VIENNACORE_LOG_WARNING(
+            "PointData: Tried to merge scalar data with different labels. No "
+            "merge performed.");
+        continue;
+      }
+      for (unsigned j = 0; j < source.scalarData[i].size(); ++j) {
+        scalarData[i][j] += source.scalarData[i][j];
+      }
+    }
+  }
+
+  void mergeVectorData(const PointData &source) {
+    if (source.getVectorDataSize() != vectorData.size()) {
+      VIENNACORE_LOG_WARNING(
+          "PointData: Tried to merge vector data with different number of "
+          "vector data sets. No merge performed.");
+      return;
+    }
+
+#pragma omp parallel for
+    for (unsigned i = 0; i < source.getVectorDataSize(); ++i) {
+      if (source.getVectorDataLabel(i) != vectorDataLabels[i]) {
+        VIENNACORE_LOG_WARNING(
+            "PointData: Tried to merge vector data with different labels. No "
+            "merge performed.");
+        continue;
+      }
+      for (unsigned j = 0; j < source.vectorData[i].size(); ++j) {
+        for (unsigned k = 0; k < source.vectorData[i][j].size(); ++k) {
+          vectorData[i][j][k] += source.vectorData[i][j][k];
+        }
+      }
+    }
+  }
+
+  void merge(const PointData &passedData) {
+    mergeScalarData(passedData);
+    mergeVectorData(passedData);
   }
 
   /// Delete all data stored in this object.
