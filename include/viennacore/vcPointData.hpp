@@ -88,7 +88,8 @@ public:
     vectorDataLabels.push_back(label);
   }
 
-  /// insert or replace scalar data array
+  // Replace the scalar data array with the given label, or insert a new one if
+  // no array with the label exists.
   void insertReplaceScalarData(const ScalarDataType &scalars,
                                const std::string &label = "Scalars") {
     if (int i = getScalarDataIndex(label); i != -1) {
@@ -98,7 +99,6 @@ public:
     }
   }
 
-  /// insert or replace scalar data array
   void insertReplaceScalarData(ScalarDataType &&scalars,
                                const std::string &label = "Scalars") {
     if (int i = getScalarDataIndex(label); i != -1) {
@@ -295,7 +295,9 @@ public:
                             passedData.vectorDataLabels.end());
   }
 
-  void appendReplace(const PointData &passedData) {
+  // Replaces existing data with the passed data if the labels match, otherwise
+  // appends the passed data.
+  void appendReplaceData(const PointData &passedData) {
     for (unsigned i = 0; i < passedData.getScalarDataSize(); ++i) {
       insertReplaceScalarData(passedData.scalarData[i],
                               passedData.scalarDataLabels[i]);
@@ -351,7 +353,12 @@ public:
     }
   }
 
-  void mergeScalarData(const PointData &source) {
+  // Merge the scalar data in the passed source PointData into this data by
+  // applying the mergeFunction to the values. The mergeFunction takes two
+  // values and returns the merged value. By default, the mergeFunction is just
+  // addition.
+  void mergeScalarData(const PointData &source,
+                       std::function<T(T, T)> mergeFunction = std::plus<T>()) {
     if (source.getScalarDataSize() != scalarData.size()) {
       VIENNACORE_LOG_WARNING(
           "PointData: Tried to merge scalar data with different number of "
@@ -368,12 +375,16 @@ public:
         continue;
       }
       for (unsigned j = 0; j < source.scalarData[i].size(); ++j) {
-        scalarData[i][j] += source.scalarData[i][j];
+        scalarData[i][j] =
+            mergeFunction(scalarData[i][j], source.scalarData[i][j]);
       }
     }
   }
 
-  void mergeVectorData(const PointData &source) {
+  void mergeVectorData(
+      const PointData &source,
+      std::function<Vec3D<T>(Vec3D<T>, Vec3D<T>)> mergeFunction =
+          [](Vec3D<T> a, Vec3D<T> b) { return a + b; }) {
     if (source.getVectorDataSize() != vectorData.size()) {
       VIENNACORE_LOG_WARNING(
           "PointData: Tried to merge vector data with different number of "
@@ -390,16 +401,10 @@ public:
         continue;
       }
       for (unsigned j = 0; j < source.vectorData[i].size(); ++j) {
-        for (unsigned k = 0; k < source.vectorData[i][j].size(); ++k) {
-          vectorData[i][j][k] += source.vectorData[i][j][k];
-        }
+        vectorData[i][j] =
+            mergeFunction(vectorData[i][j], source.vectorData[i][j]);
       }
     }
-  }
-
-  void merge(const PointData &passedData) {
-    mergeScalarData(passedData);
-    mergeVectorData(passedData);
   }
 
   /// Delete all data stored in this object.
