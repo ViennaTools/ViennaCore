@@ -368,7 +368,7 @@ public:
     }
 
 #pragma omp parallel for
-    for (unsigned i = 0; i < source.getScalarDataSize(); ++i) {
+    for (int i = 0; i < source.getScalarDataSize(); ++i) {
       if (source.getScalarDataLabel(i) != scalarDataLabels[i]) {
         VIENNACORE_LOG_WARNING(
             "PointData: Tried to merge scalar data with different labels. No "
@@ -394,7 +394,7 @@ public:
     }
 
 #pragma omp parallel for
-    for (unsigned i = 0; i < source.getVectorDataSize(); ++i) {
+    for (int i = 0; i < source.getVectorDataSize(); ++i) {
       if (source.getVectorDataLabel(i) != vectorDataLabels[i]) {
         VIENNACORE_LOG_WARNING(
             "PointData: Tried to merge vector data with different labels. No "
