@@ -174,7 +174,9 @@ public:
     if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
-    { message += s + ": " + std::to_string(timeInSeconds) + " s \n"; }
+    {
+      message += s + ": " + std::to_string(timeInSeconds) + " s \n";
+    }
     return *this;
   }
 
@@ -192,12 +194,25 @@ public:
     return *this;
   }
 
+  // Add intermediate message if log level is high enough.
+  Logger &addIntermediate(const std::string &s) {
+    if (getLogLevel() < 3)
+      return *this;
+#pragma omp critical
+    {
+      message += s + "\n";
+    }
+    return *this;
+  }
+
   // Add info message if log level is high enough.
   Logger &addInfo(const std::string &s) {
     if (getLogLevel() < 2)
       return *this;
 #pragma omp critical
-    { message += s + "\n"; }
+    {
+      message += s + "\n";
+    }
     return *this;
   }
 
@@ -341,5 +356,12 @@ inline bool Logger::logToFile = false;
   do {                                                                         \
     if (viennacore::Logger::hasTiming()) {                                     \
       viennacore::Logger::getInstance().addTiming(msg, timer).print();         \
+    }                                                                          \
+  } while (0)
+
+#define VIENNACORE_LOG_INTERMEDIATE(msg)                                       \
+  do {                                                                         \
+    if (viennacore::Logger::hasIntermediate()) {                               \
+      viennacore::Logger::getInstance().addIntermediate(msg).print();          \
     }                                                                          \
   } while (0)
