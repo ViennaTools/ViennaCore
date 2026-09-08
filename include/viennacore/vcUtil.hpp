@@ -115,12 +115,20 @@ struct Parameters {
 
   bool contains(const std::string &key) const { return m.find(key) != m.end(); }
 
-  inline bool contains(std::initializer_list<const char *> keys) {
+  inline bool containsAny(std::initializer_list<const char *> keys) {
     for (const auto *key : keys) {
       if (contains(key))
         return true;
     }
     return false;
+  }
+
+  inline bool containsAll(std::initializer_list<const char *> keys) {
+    for (const auto *key : keys) {
+      if (!contains(key))
+        return false;
+    }
+    return true;
   }
 
   void set(const std::string &key, const std::string &value) { m[key] = value; }
