@@ -10,6 +10,33 @@ int main() {
 
   std::stringstream ss;
 
+  const char *levelNames[][3] = {
+      {"error", "ERROR", "Error"},
+      {"warning", "WARNING", "WaRnInG"},
+      {"info", "INFO", "Info"},
+      {"intermediate", "INTERMEDIATE", "Intermediate"},
+      {"timing", "TIMING", "TiMiNg"},
+      {"debug", "DEBUG", "Debug"}};
+  for (unsigned level = 0; level < 6; ++level) {
+    for (const auto *name : levelNames[level]) {
+      Logger::setLogLevel(name);
+      VC_TEST_ASSERT(Logger::getLogLevel() == level);
+    }
+  }
+
+  Logger::setLogLevel(std::string("iNfO"));
+  VC_TEST_ASSERT(Logger::getLogLevel() == 2);
+  for (const auto *name : {"unknown", ""}) {
+    bool threw = false;
+    try {
+      Logger::setLogLevel(name);
+    } catch (const std::invalid_argument &) {
+      threw = true;
+    }
+    VC_TEST_ASSERT(threw);
+    VC_TEST_ASSERT(Logger::getLogLevel() == 2);
+  }
+
   logger.setLogLevel(LogLevel::TIMING);
   VC_TEST_ASSERT(logger.getLogLevel() == 4);
 
