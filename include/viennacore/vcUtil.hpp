@@ -197,12 +197,15 @@ struct Parameters {
       return std::stold(s);
     } else if constexpr (std::is_same_v<T, std::string>) {
       return s;
+    } else if constexpr (std::is_same_v<T, const char *>) {
+      return s.c_str();
     } else if constexpr (std::is_same_v<T, bool>) {
-      if (s == "true")
+      if (s == "1" || s == "true" || s == "yes" || s == "on")
         return true;
-      if (s == "false")
+      if (s == "0" || s == "false" || s == "no" || s == "off")
         return false;
-      throw std::invalid_argument("The value must be either 'true' or 'false'");
+      throw std::invalid_argument(
+          "The value must be a boolean (0/1, true/false, yes/no, on/off)");
     } else {
       // Throws a compile time error for all types but void
       return;
