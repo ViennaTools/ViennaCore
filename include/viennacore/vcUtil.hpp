@@ -63,189 +63,10 @@ template <class NumericType>
   return std::clamp(val, NumericType(0), NumericType(1));
 }
 
-// Checks if a string starts with an - or not
-[[nodiscard]] inline bool isSigned(const std::string &s) {
-  const auto pos = s.find_first_not_of(' ');
-  if (pos == std::string::npos)
-    return false;
-  if (s[pos] == '-')
-    return true;
-  return false;
-}
-
 template <typename T> struct IsVector : std::false_type {};
 
 template <typename T, typename Allocator>
 struct IsVector<std::vector<T, Allocator>> : std::true_type {};
-
-// Converts a string to the given datatype, splitting vectors at commas.
-template <typename T> [[nodiscard]] T convert(const std::string &s) {
-  if constexpr (IsVector<T>::value) {
-    T values;
-    std::size_t start = 0;
-    while (true) {
-      const auto end = s.find(',', start);
-      const auto item = s.substr(start, end - start);
-      const auto first = item.find_first_not_of(" \t\r\n");
-      if (first == std::string::npos)
-        throw std::invalid_argument("List values must not be empty");
-      const auto last = item.find_last_not_of(" \t\r\n");
-      values.push_back(convert<typename T::value_type>(
-          item.substr(first, last - first + 1)));
-      if (end == std::string::npos)
-        break;
-      start = end + 1;
-    }
-    return values;
-  } else if constexpr (std::is_same_v<T, int>) {
-    return std::stoi(s);
-  } else if constexpr (std::is_same_v<T, unsigned int>) {
-    if (isSigned(s))
-      throw std::invalid_argument("The value must be unsigned");
-    const unsigned long int val = std::stoul(s);
-    auto num = static_cast<unsigned int>(val);
-    if (val != num)
-      throw std::out_of_range("The value is larger than the largest value "
-                              "representable by `unsigned int`.");
-    return num;
-  } else if constexpr (std::is_same_v<T, long int>) {
-    return std::stol(s);
-  } else if constexpr (std::is_same_v<T, unsigned long int>) {
-    if (isSigned(s))
-      throw std::invalid_argument("The value must be unsigned");
-    return std::stoul(s);
-  } else if constexpr (std::is_same_v<T, long long int>) {
-    return std::stoll(s);
-  } else if constexpr (std::is_same_v<T, unsigned long long int>) {
-    if (isSigned(s))
-      throw std::invalid_argument("The value must be unsigned");
-    return std::stoull(s);
-  } else if constexpr (std::is_same_v<T, float>) {
-    return std::stof(s);
-  } else if constexpr (std::is_same_v<T, double>) {
-    return std::stod(s);
-  } else if constexpr (std::is_same_v<T, long double>) {
-    return std::stold(s);
-  } else if constexpr (std::is_same_v<T, std::string>) {
-    return s;
-  } else if constexpr (std::is_same_v<T, bool>) {
-    if (s == "true")
-      return true;
-    if (s == "false")
-      return false;
-    throw std::invalid_argument("The value must be either 'true' or 'false'");
-  } else {
-    // Throws a compile time error for all types but void
-    return;
-  }
-}
-
-// safeConvert wraps the convert function to catch exceptions. If an error
-// occurs the default initialized value is returned.
-template <typename T> std::optional<T> safeConvert(const std::string &s) {
-  T value;
-  try {
-    value = convert<T>(s);
-  } catch (std::exception &) {
-    VIENNACORE_LOG_WARNING("'" + s + "' couldn't be converted to type " +
-                           std::string(typeid(value).name()) + ".");
-    return std::nullopt;
-  }
-  return {value};
-}
-
-inline std::unordered_map<std::string, std::string>
-parseConfigStream(std::istream &input) {
-  // Regex to find trailing and leading whitespaces
-  const auto wsRegex = std::regex("^ +| +$|( ) +");
-
-  // Regular expression for extracting key and value separated by '=' as two
-  // separate capture groups
-  const auto keyValueRegex = std::regex(
-      R"rgx([ \t]*([0-9a-zA-Z_\-\.+]+)[ \t]*=[ \t]*([0-9a-zA-Z_\-\.+]+(?:[ \t]*,[ \t]*[0-9a-zA-Z_\-\.+]*)*).*$)rgx");
-
-  // Reads a simple config file containing a single <key>=<value> pair per line
-  // and returns the content as an unordered map
-  std::unordered_map<std::string, std::string> paramMap;
-  std::string line;
-  while (std::getline(input, line)) {
-    // Remove trailing and leading whitespaces
-    line = std::regex_replace(line, wsRegex, "$1");
-    // Skip this line if it is marked as a comment
-    if (line.rfind('#') == 0 || line.empty())
-      continue;
-
-    // Extract key and value
-    if (std::smatch smatch; std::regex_search(line, smatch, keyValueRegex)) {
-      if (smatch.size() < 3) {
-        VIENNACORE_LOG_WARNING("Malformed line: " + line);
-        continue;
-      }
-
-      paramMap.insert({smatch[1], smatch[2]});
-    }
-  }
-  return paramMap;
-}
-
-// Opens a file and forwards its stream to the config stream parser.
-inline std::unordered_map<std::string, std::string>
-readFile(const std::string &filename) {
-  std::ifstream f(filename);
-  if (!f.is_open()) {
-    VIENNACORE_LOG_WARNING("Couldn't open config file: " + filename);
-    return {};
-  }
-  return parseConfigStream(f);
-}
-
-// Class that can be used during the assigning process of a param map to the
-// param struct
-template <typename K, typename V, typename C = decltype(&convert<V>)>
-class Item {
-private:
-  C conv;
-
-public:
-  K key;
-  V &value;
-
-  Item(K key_, V &value_) : conv(&convert<V>), key(key_), value(value_) {}
-
-  Item(K key_, V &value_, C conv_) : conv(conv_), key(key_), value(value_) {}
-
-  void operator()(const std::string &k) {
-    try {
-      value = conv(k);
-    } catch (std::exception &) {
-      VIENNACORE_LOG_WARNING("'" + k +
-                             "' couldn't be converted to type of parameter '" +
-                             key + "'");
-    }
-  }
-};
-
-// If the key is found in the unordered_map, then the
-template <typename K, typename V, typename C>
-void AssignItems(std::unordered_map<std::string, std::string> &map,
-                 Item<K, V, C> &&item) {
-  if (auto it = map.find(item.key); it != map.end()) {
-    item(it->second);
-    // Remove the item from the map, since it is now 'consumed'.
-    map.erase(it);
-  } else {
-    VIENNACORE_LOG_WARNING("Couldn't find '" + item.key +
-                           "' in parameter file. Using default value instead.");
-  }
-}
-
-// Peels off items from parameter pack
-template <typename K, typename V, typename C, typename... ARGS>
-void AssignItems(std::unordered_map<std::string, std::string> &map,
-                 Item<K, V, C> &&item, ARGS &&...args) {
-  AssignItems(map, std::forward<Item<K, V, C>>(item));
-  AssignItems(map, std::forward<ARGS>(args)...);
-}
 
 template <class NumericType, std::size_t D>
 std::string arrayToString(const std::array<NumericType, D> arr) {
@@ -277,6 +98,138 @@ struct Parameters {
       return T();
     }
     return convert<T>(m.at(key));
+  }
+
+  static std::unordered_map<std::string, std::string>
+  parseConfigStream(std::istream &input) {
+    // Regex to find trailing and leading whitespaces
+    const auto wsRegex = std::regex("^ +| +$|( ) +");
+
+    // Regular expression for extracting key and value separated by '=' as two
+    // separate capture groups
+    const auto keyValueRegex = std::regex(
+        R"rgx([ \t]*([0-9a-zA-Z_\-\.+]+)[ \t]*=[ \t]*([0-9a-zA-Z_\-\.+]+(?:[ \t]*,[ \t]*[0-9a-zA-Z_\-\.+]*)*).*$)rgx");
+
+    // Reads a simple config file containing a single <key>=<value> pair per
+    // line and returns the content as an unordered map
+    std::unordered_map<std::string, std::string> paramMap;
+    std::string line;
+    while (std::getline(input, line)) {
+      // Remove trailing and leading whitespaces
+      line = std::regex_replace(line, wsRegex, "$1");
+      // Skip this line if it is marked as a comment
+      if (line.rfind('#') == 0 || line.empty())
+        continue;
+
+      // Extract key and value
+      if (std::smatch smatch; std::regex_search(line, smatch, keyValueRegex)) {
+        if (smatch.size() < 3) {
+          VIENNACORE_LOG_WARNING("Malformed line: " + line);
+          continue;
+        }
+
+        paramMap.insert({smatch[1], smatch[2]});
+      }
+    }
+    return paramMap;
+  }
+
+  // Opens a file and forwards its stream to the config stream parser.
+  static std::unordered_map<std::string, std::string>
+  readFile(const std::string &filename) {
+    std::ifstream f(filename);
+    if (!f.is_open()) {
+      VIENNACORE_LOG_WARNING("Couldn't open config file: " + filename);
+      return {};
+    }
+    return parseConfigStream(f);
+  }
+
+  // Converts a string to the given datatype, splitting vectors at commas.
+  template <typename T> [[nodiscard]] static T convert(const std::string &s) {
+    if constexpr (IsVector<T>::value) {
+      T values;
+      std::size_t start = 0;
+      while (true) {
+        const auto end = s.find(',', start);
+        const auto item = s.substr(start, end - start);
+        const auto first = item.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos)
+          throw std::invalid_argument("List values must not be empty");
+        const auto last = item.find_last_not_of(" \t\r\n");
+        values.push_back(convert<typename T::value_type>(
+            item.substr(first, last - first + 1)));
+        if (end == std::string::npos)
+          break;
+        start = end + 1;
+      }
+      return values;
+    } else if constexpr (std::is_same_v<T, int>) {
+      return std::stoi(s);
+    } else if constexpr (std::is_same_v<T, unsigned int>) {
+      if (isSigned(s))
+        throw std::invalid_argument("The value must be unsigned");
+      const unsigned long int val = std::stoul(s);
+      auto num = static_cast<unsigned int>(val);
+      if (val != num)
+        throw std::out_of_range("The value is larger than the largest value "
+                                "representable by `unsigned int`.");
+      return num;
+    } else if constexpr (std::is_same_v<T, long int>) {
+      return std::stol(s);
+    } else if constexpr (std::is_same_v<T, unsigned long int>) {
+      if (isSigned(s))
+        throw std::invalid_argument("The value must be unsigned");
+      return std::stoul(s);
+    } else if constexpr (std::is_same_v<T, long long int>) {
+      return std::stoll(s);
+    } else if constexpr (std::is_same_v<T, unsigned long long int>) {
+      if (isSigned(s))
+        throw std::invalid_argument("The value must be unsigned");
+      return std::stoull(s);
+    } else if constexpr (std::is_same_v<T, float>) {
+      return std::stof(s);
+    } else if constexpr (std::is_same_v<T, double>) {
+      return std::stod(s);
+    } else if constexpr (std::is_same_v<T, long double>) {
+      return std::stold(s);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+      return s;
+    } else if constexpr (std::is_same_v<T, bool>) {
+      if (s == "true")
+        return true;
+      if (s == "false")
+        return false;
+      throw std::invalid_argument("The value must be either 'true' or 'false'");
+    } else {
+      // Throws a compile time error for all types but void
+      return;
+    }
+  }
+
+  // Checks if a string starts with an - or not
+  [[nodiscard]] static inline bool isSigned(const std::string &s) {
+    const auto pos = s.find_first_not_of(' ');
+    if (pos == std::string::npos)
+      return false;
+    if (s[pos] == '-')
+      return true;
+    return false;
+  }
+
+  // safeConvert wraps the convert function to catch exceptions. If an error
+  // occurs the default initialized value is returned.
+  template <typename T>
+  static std::optional<T> safeConvert(const std::string &s) {
+    T value;
+    try {
+      value = convert<T>(s);
+    } catch (std::exception &) {
+      VIENNACORE_LOG_WARNING("'" + s + "' couldn't be converted to type " +
+                             std::string(typeid(value).name()) + ".");
+      return std::nullopt;
+    }
+    return {value};
   }
 };
 
