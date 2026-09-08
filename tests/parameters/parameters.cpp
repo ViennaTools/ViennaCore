@@ -41,6 +41,11 @@ int main() {
   test_type = std::is_same_v<decltype(par4), int>;
   VC_TEST_ASSERT(test_type);
 
+  VC_TEST_ASSERT(p.getFirstOf({"par1", "par2"}) == 1.0);
+  VC_TEST_ASSERT(p.getFirstOf<int>({"missing", "par4"}) == 4);
+  VC_TEST_ASSERT(p.getFirstOf<int>({"missing", "also_missing"}, 42) == 42);
+  VC_TEST_ASSERT(p.getFirstOf<int>({}) == 0);
+
   const auto integers = p.get<std::vector<int>>("integers");
   VC_TEST_ASSERT((integers == std::vector<int>{1, -2, 3}));
 

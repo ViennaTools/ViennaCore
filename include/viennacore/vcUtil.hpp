@@ -109,8 +109,14 @@ struct Parameters {
         return convert<T>(m.at(key));
       }
     }
+    std::string keyNames;
+    for (auto it = keys.begin(); it != keys.end(); ++it) {
+      if (it != keys.begin())
+        keyNames += ", ";
+      keyNames += *it;
+    }
     VIENNACORE_LOG_WARNING("None of the keys found in parameters: " +
-                           std::string(keys.begin(), keys.end()));
+                           keyNames);
     return fallback;
   }
 
