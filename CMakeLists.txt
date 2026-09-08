@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.24 FATAL_ERROR)
 project(
   ViennaCore
   LANGUAGES CXX
-  VERSION 2.2.0)
+  VERSION 2.3.0)
 
 # --------------------------------------------------------------------------------------------------------
 # Library Options
