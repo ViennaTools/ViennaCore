@@ -115,7 +115,7 @@ struct Parameters {
 
   bool contains(const std::string &key) const { return m.find(key) != m.end(); }
 
-  inline bool containsAny(std::initializer_list<const char *> keys) {
+  inline bool containsAny(std::initializer_list<const char *> keys) const {
     for (const auto *key : keys) {
       if (contains(key))
         return true;
@@ -123,7 +123,7 @@ struct Parameters {
     return false;
   }
 
-  inline bool containsAll(std::initializer_list<const char *> keys) {
+  inline bool containsAll(std::initializer_list<const char *> keys) const {
     for (const auto *key : keys) {
       if (!contains(key))
         return false;
