@@ -100,7 +100,30 @@ struct Parameters {
     return convert<T>(m.at(key));
   }
 
+  template <typename T = double>
+  [[nodiscard]] T getFirstOf(std::initializer_list<const char *> keys,
+                             T fallback = T{}) const {
+    for (const auto &key : keys) {
+      if (m.find(key) != m.end()) {
+        return convert<T>(m.at(key));
+      }
+    }
+    VIENNACORE_LOG_WARNING("None of the keys found in parameters: " +
+                           std::string(keys.begin(), keys.end()));
+    return fallback;
+  }
+
   bool contains(const std::string &key) const { return m.find(key) != m.end(); }
+
+  inline bool contains(std::initializer_list<const char *> keys) {
+    for (const auto *key : keys) {
+      if (contains(key))
+        return true;
+    }
+    return false;
+  }
+
+  void set(const std::string &key, const std::string &value) { m[key] = value; }
 
   static std::unordered_map<std::string, std::string>
   parseConfigStream(std::istream &input) {
