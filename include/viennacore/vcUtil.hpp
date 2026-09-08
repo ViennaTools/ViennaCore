@@ -12,6 +12,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #ifdef __WIN32__
 #define vc_snprintf sprintf_s
@@ -72,9 +73,31 @@ template <class NumericType>
   return false;
 }
 
-// Converts string to the given numeric datatype
+template <typename T> struct IsVector : std::false_type {};
+
+template <typename T, typename Allocator>
+struct IsVector<std::vector<T, Allocator>> : std::true_type {};
+
+// Converts a string to the given datatype, splitting vectors at commas.
 template <typename T> [[nodiscard]] T convert(const std::string &s) {
-  if constexpr (std::is_same_v<T, int>) {
+  if constexpr (IsVector<T>::value) {
+    T values;
+    std::size_t start = 0;
+    while (true) {
+      const auto end = s.find(',', start);
+      const auto item = s.substr(start, end - start);
+      const auto first = item.find_first_not_of(" \t\r\n");
+      if (first == std::string::npos)
+        throw std::invalid_argument("List values must not be empty");
+      const auto last = item.find_last_not_of(" \t\r\n");
+      values.push_back(convert<typename T::value_type>(
+          item.substr(first, last - first + 1)));
+      if (end == std::string::npos)
+        break;
+      start = end + 1;
+    }
+    return values;
+  } else if constexpr (std::is_same_v<T, int>) {
     return std::stoi(s);
   } else if constexpr (std::is_same_v<T, unsigned int>) {
     if (isSigned(s))
@@ -139,7 +162,7 @@ parseConfigStream(std::istream &input) {
   // Regular expression for extracting key and value separated by '=' as two
   // separate capture groups
   const auto keyValueRegex = std::regex(
-      R"rgx([ \t]*([0-9a-zA-Z_\-\.+]+)[ \t]*=[ \t]*([0-9a-zA-Z_\-\.+]+).*$)rgx");
+      R"rgx([ \t]*([0-9a-zA-Z_\-\.+]+)[ \t]*=[ \t]*([0-9a-zA-Z_\-\.+]+(?:[ \t]*,[ \t]*[0-9a-zA-Z_\-\.+]*)*).*$)rgx");
 
   // Reads a simple config file containing a single <key>=<value> pair per line
   // and returns the content as an unordered map
@@ -246,6 +269,7 @@ struct Parameters {
 
   void readConfigStream(std::istream &input) { m = parseConfigStream(input); }
 
+  // Use get<std::vector<T>>(key) to retrieve comma-separated values as a list.
   template <typename T = double>
   [[nodiscard]] T get(const std::string &key) const {
     if (m.find(key) == m.end()) {
