@@ -94,7 +94,8 @@ struct Parameters {
   template <typename T = double>
   [[nodiscard]] T get(const std::string &key, T fallback = T{}) const {
     if (m.find(key) == m.end()) {
-      VIENNACORE_LOG_WARNING("Key not found in parameters: " + key);
+      VIENNACORE_LOG_WARNING("Key not found in parameters: " + key +
+                             ", returning fallback value.");
       return fallback;
     }
     return convert<T>(m.at(key));
