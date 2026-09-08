@@ -92,10 +92,10 @@ struct Parameters {
 
   // Use get<std::vector<T>>(key) to retrieve comma-separated values as a list.
   template <typename T = double>
-  [[nodiscard]] T get(const std::string &key) const {
+  [[nodiscard]] T get(const std::string &key, T fallback = T{}) const {
     if (m.find(key) == m.end()) {
-      VIENNACORE_LOG_ERROR("Key not found in parameters: " + key);
-      return T();
+      VIENNACORE_LOG_WARNING("Key not found in parameters: " + key);
+      return fallback;
     }
     return convert<T>(m.at(key));
   }
