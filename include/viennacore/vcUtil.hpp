@@ -100,6 +100,8 @@ struct Parameters {
     return convert<T>(m.at(key));
   }
 
+  bool contains(const std::string &key) const { return m.find(key) != m.end(); }
+
   static std::unordered_map<std::string, std::string>
   parseConfigStream(std::istream &input) {
     // Regex to find trailing and leading whitespaces
