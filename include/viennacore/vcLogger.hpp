@@ -2,8 +2,10 @@
 
 #include "vcTimer.hpp"
 
+#include <cctype>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 #ifdef VIENNACORE_COMPILE_GPU
@@ -76,6 +78,29 @@ public:
   // Set the log level for all instances of the logger.
   static void setLogLevel(const LogLevel passedLogLevel) {
     logLevel = passedLogLevel;
+  }
+
+  // Set the log level by name, ignoring case. Unknown names throw without
+  // changing the current log level.
+  static void setLogLevel(const std::string &passedLogLevel) {
+    std::string level = passedLogLevel;
+    for (char &c : level)
+      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+
+    if (level == "error")
+      setLogLevel(LogLevel::ERROR);
+    else if (level == "warning")
+      setLogLevel(LogLevel::WARNING);
+    else if (level == "info")
+      setLogLevel(LogLevel::INFO);
+    else if (level == "intermediate")
+      setLogLevel(LogLevel::INTERMEDIATE);
+    else if (level == "timing")
+      setLogLevel(LogLevel::TIMING);
+    else if (level == "debug")
+      setLogLevel(LogLevel::DEBUG);
+    else
+      throw std::invalid_argument("Unknown log level: " + passedLogLevel);
   }
 
   static unsigned getLogLevel() { return static_cast<unsigned>(logLevel); }
