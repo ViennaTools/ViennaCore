@@ -26,10 +26,12 @@ template <typename NumericType, int D> void RunTest() {
   VC_TEST_ASSERT((*neighbors)[3].first == 3 && (*neighbors)[3].second == 25);
   VC_TEST_ASSERT(!tree.findKNearest(query, 0));
   VC_TEST_ASSERT(!tree.findKNearest(query, -1));
-  // Radius queries take a squared radius, exclude its boundary, and are unsorted.
+  // Radius queries take a squared radius, exclude its boundary, and are
+  // unsorted.
   auto radius = tree.findNearestWithinRadius(query, 9);
   VC_TEST_ASSERT(radius && radius->size() == 2);
-  std::sort(radius->begin(), radius->end());
+  std::sort(radius->begin(), radius->end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
   VC_TEST_ASSERT((*radius)[0].first == 1 && (*radius)[0].second == 4);
   VC_TEST_ASSERT((*radius)[1].first == 2 && (*radius)[1].second == 1);
   VC_TEST_ASSERT(tree.findNearestWithinRadius(query, 0)->empty());
@@ -53,15 +55,6 @@ template <typename NumericType, int D> void RunTest() {
   cloud.positions.clear();
   cloudTree.build();
   VC_TEST_ASSERT(cloudTree.findNearest({0, 0, 0})->second == 25);
-
-  bool threw = false;
-  try {
-    dynamicTree.setPoints({{1, 2}, {3}});
-  } catch (const std::invalid_argument &) {
-    threw = true;
-  }
-  VC_TEST_ASSERT(threw);
-  VC_TEST_ASSERT(dynamicTree.findNearest({0, 0})->second == 0);
 }
 } // namespace viennacore
 

@@ -64,9 +64,9 @@ public:
   }
 
 private:
-  static std::vector<Neighbor> convertNeighbors(
-      const std::optional<std::vector<std::pair<std::size_t, NumericType>>>
-          &neighbors) {
+  template <class T>
+  static std::vector<Neighbor>
+  convertNeighbors(const std::optional<T> &neighbors) {
     std::vector<Neighbor> result;
     if (!neighbors) {
       return result;

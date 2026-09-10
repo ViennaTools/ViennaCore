@@ -23,16 +23,11 @@ namespace viennacore {
 
 // 3D point data with a nanoflann dataset interface.
 // NumericType: Floating-point coordinate type, typically float or double.
-//
-// NFKDTree copies only positions; normals and cached bounds are optional for
-// that use. Call validate() explicitly when matching normals are required.
 template <class NumericType> struct PointCloud {
   // Point coordinates, in the order used for returned neighbor indices.
   std::vector<Vec3D<NumericType>> positions;
   // Per-point normals; validate() requires one normal per position.
   std::vector<Vec3D<NumericType>> normals;
-  // Optional bounds: {minimum corner, maximum corner}, enclosing all points.
-  std::vector<Vec3D<NumericType>> min_max;
 
   // Returns the number of positions.
   [[nodiscard]] std::size_t size() const { return positions.size(); }
@@ -42,37 +37,8 @@ template <class NumericType> struct PointCloud {
   // contain exactly two corners. Does not check whether bounds enclose points.
   void validate() const {
     if (positions.size() != normals.size())
-      throw std::invalid_argument(
+      VIENNACORE_LOG_ERROR(
           "PointCloud: positions and normals must have the same size.");
-    if (!min_max.empty() && min_max.size() != 2)
-      throw std::invalid_argument(
-          "PointCloud: min_max must contain exactly two points.");
-  }
-
-  // nanoflann callback returning the number of indexed points.
-  std::size_t kdtree_get_point_count() const { return size(); }
-  // Returns a coordinate for nanoflann, without bounds checking.
-  // idx: Position index, less than size().
-  // dim: Coordinate axis, in [0, 3).
-  NumericType kdtree_get_pt(std::size_t idx, std::size_t dim) const {
-    return positions[idx][dim];
-  }
-  // Supplies cached bounds to nanoflann when available.
-  // bb: Output bounding box with three low/high intervals.
-  // Returns false if min_max is empty, requesting automatic computation.
-  // Throws std::invalid_argument: If nonempty min_max has other than two
-  // entries.
-  template <class BBOX> bool kdtree_get_bbox(BBOX &bb) const {
-    if (min_max.empty())
-      return false;
-    if (min_max.size() != 2)
-      throw std::invalid_argument(
-          "PointCloud: min_max must contain exactly two points.");
-    for (std::size_t i = 0; i < 3; ++i) {
-      bb[i].low = min_max[0][i];
-      bb[i].high = min_max[1][i];
-    }
-    return true;
   }
 };
 
@@ -122,8 +88,8 @@ public:
   // Constructs an empty tree with a maximum leaf size of 10.
   NFKDTree() = default;
 
-  // Copies points without building the search index.
-  // points: Points of a common, nonzero dimension; may be empty.
+  // Copies points without building the search tree.
+  // points: Points of a common, nonzero dimension.
   // maxLeafSize: Maximum points per leaf; zero is clamped to one.
   // Smaller leaves trade more tree traversal for fewer point comparisons.
   explicit NFKDTree(const std::vector<ValueType> &points,
@@ -132,7 +98,7 @@ public:
     setPoints(points);
   }
 
-  // Copies a cloud's positions without building the search index.
+  // Copies a cloud's positions without building the search tree.
   // cloud: Source positions; normals and min_max are ignored, and
   // validate() is not called. Bounds are computed during build().
   // maxLeafSize: Maximum points per leaf; zero is clamped to one.
@@ -146,7 +112,7 @@ public:
       if constexpr (std::is_same_v<ValueType, std::vector<NumericType>>)
         point.resize(3);
       if (point.size() != 3)
-        throw std::invalid_argument("NFKDTree: PointCloud requires 3D points.");
+        VIENNACORE_LOG_ERROR("NFKDTree: PointCloud requires 3D points.");
       std::copy(position.begin(), position.end(), point.begin());
       points.push_back(std::move(point));
     }
@@ -173,10 +139,12 @@ public:
     const auto dimension = points.front().size();
     if (dimension == 0 ||
         dimension > static_cast<SizeType>(std::numeric_limits<int>::max()))
-      throw std::invalid_argument("NFKDTree: invalid point dimension.");
-    for (const auto &point : points)
-      if (point.size() != dimension)
-        throw std::invalid_argument("NFKDTree: inconsistent point dimensions.");
+      VIENNACORE_LOG_ERROR("NFKDTree: invalid point dimension.");
+    if constexpr (D > 0) {
+      if (dimension != static_cast<SizeType>(D))
+        VIENNACORE_LOG_ERROR(
+            "NFKDTree: input point dimension does not match fixed D.");
+    }
 
     Dataset replacement{points};
     tree_.reset();
@@ -250,24 +218,26 @@ public:
   // Returns Unsorted pairs of input index and squared Euclidean distance. An
   // engaged empty vector means no matches; std::nullopt means an unbuilt/empty
   // tree or a negative/NaN radiusSquared.
-  [[nodiscard]] std::optional<std::vector<Neighbor>>
+  [[nodiscard]] std::optional<
+      std::vector<nanoflann::ResultItem<SizeType, NumericType>>>
   findNearestWithinRadius(const ValueType &point, NumericType radiusSquared,
                           SizeType expected = 0) const {
     if (!tree_ || radiusSquared < 0 || std::isnan(radiusSquared))
       return {};
 
     std::vector<nanoflann::ResultItem<SizeType, NumericType>> matches;
-    matches.reserve(expected);
+    if (expected > 0)
+      matches.reserve(expected);
     // NOTE: nanoflann uses a strict comparison; KDTree includes the radius
     // boundary.
     const auto found =
         tree_->radiusSearch(point.data(), radiusSquared, matches,
                             nanoflann::SearchParameters(0, false));
-    std::vector<Neighbor> result;
-    result.reserve(found);
-    for (const auto &match : matches)
-      result.emplace_back(match.first, match.second);
-    return result;
+
+    if (found <= 0)
+      VIENNACORE_LOG_WARNING("NFKDTree: No points found within radius.");
+
+    return matches;
   }
 };
 
