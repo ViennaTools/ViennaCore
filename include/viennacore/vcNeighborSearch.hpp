@@ -20,7 +20,7 @@ namespace viennacore {
 template <class NumericType, template <class, class> class Tree = KDTree>
 class NeighborSearch {
   using TreeType = Tree<NumericType, Vec3D<NumericType>>;
-  static constexpr bool squaredDistances =
+  static constexpr bool strictRadiusBoundary =
       std::is_same_v<TreeType, NFKDTree<NumericType, Vec3D<NumericType>>>;
 
 public:
@@ -51,12 +51,12 @@ public:
     if (radius < 0 || std::isnan(radius))
       return {};
     auto searchRadius = static_cast<NumericType>(radius);
-    if constexpr (squaredDistances) {
+    searchRadius *= searchRadius;
+    if constexpr (strictRadiusBoundary) {
       // nanoflann excludes the threshold itself; advance it to include points
       // at exactly the requested squared radius.
-      searchRadius =
-          std::nextafter(searchRadius * searchRadius,
-                         std::numeric_limits<NumericType>::infinity());
+      searchRadius = std::nextafter(
+          searchRadius, std::numeric_limits<NumericType>::infinity());
     }
     const auto neighbors =
         tree_.findNearestWithinRadius(points_[i], searchRadius);
@@ -73,9 +73,7 @@ private:
     }
     result.reserve(neighbors->size());
     for (const auto &[index, distance] : *neighbors) {
-      double convertedDistance = static_cast<double>(distance);
-      if constexpr (squaredDistances)
-        convertedDistance = std::sqrt(convertedDistance);
+      const double convertedDistance = std::sqrt(static_cast<double>(distance));
       result.emplace_back(static_cast<std::size_t>(index), convertedDistance);
     }
     std::sort(result.begin(), result.end(),

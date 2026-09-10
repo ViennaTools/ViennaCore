@@ -87,8 +87,8 @@ template <class NumericType> struct PointCloud {
 // and after each setPoints(). Empty or unbuilt trees return std::nullopt.
 // Neighbor pairs contain the original zero-based input index and the squared
 // Euclidean distance. K-nearest results are sorted by distance; radius results
-// are unsorted and exclude the radius boundary. These distance and radius
-// conventions differ from KDTree, which returns ordinary Euclidean distances.
+// are unsorted and exclude the radius boundary. KDTree uses the same squared
+// distance convention, but includes points on the radius boundary.
 //
 // Copy and move operations are disabled because the index references owned
 // data. Concurrent const queries are supported after build(); do not modify or
