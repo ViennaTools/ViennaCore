@@ -69,6 +69,15 @@ CPMAddPackage(
   VERSION 1.13.0
   GIT_REPOSITORY "https://github.com/TheLartians/PackageProject.cmake")
 
+CPMAddPackage(
+  NAME nanoflann
+  GIT_REPOSITORY "https://github.com/jlblancoc/nanoflann.git"
+  GIT_TAG 1.12.1
+  DOWNLOAD_ONLY YES)
+
+target_include_directories(${PROJECT_NAME} SYSTEM INTERFACE
+                           "$<BUILD_INTERFACE:${nanoflann_SOURCE_DIR}/include>")
+
 set(VIENNACORE_DEPENDENCIES "")
 if(VIENNACORE_USE_OPENMP)
   find_package(OpenMP REQUIRED)
@@ -203,6 +212,9 @@ endif()
 # --------------------------------------------------------------------------------------------------------
 # Install Target
 # --------------------------------------------------------------------------------------------------------
+
+install(FILES "${nanoflann_SOURCE_DIR}/include/nanoflann.hpp"
+        DESTINATION include/viennacore-${PROJECT_VERSION})
 
 packageProject(
   NAME ${PROJECT_NAME} NAMESPACE ViennaTools
