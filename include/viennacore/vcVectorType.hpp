@@ -34,6 +34,12 @@ _define_vec_types(double, d);
 
 #undef _define_vec_types
 
+#ifdef __CUDACC__
+inline __vc_device Vec3Df make_Vec3Df(const float3 &v) {
+  return Vec3Df{v.x, v.y, v.z};
+}
+#endif
+
 /* ------------- Vector operation functions ------------- */
 
 #define _define_operator(op)                                                   \
