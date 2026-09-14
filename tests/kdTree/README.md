@@ -1,13 +1,5 @@
 # KD-tree benchmark
 
-Build with optimizations enabled:
-
-```sh
-cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DVIENNACORE_BUILD_TESTS=ON
-cmake --build build-release --target KDTreeBenchmark -j
-OMP_NUM_THREADS=4 ./build-release/tests/kdTree/KDTreeBenchmark
-```
-
 The default benchmark compares KDTree and NFKDTree with 1,000, 10,000,
 100,000, and 1,000,000 points. Each implementation gets exactly 10 runs per
 point count. Build and lookup times are reported as independent minima in
