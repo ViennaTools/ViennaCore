@@ -43,6 +43,9 @@
 
 namespace viennacore {
 
+// Query results contain input indices and squared Euclidean distances,
+// including any axis scaling supplied to setPoints(). Radius queries take a
+// squared radius and include points on the boundary.
 template <class NumericType, class ValueType = std::vector<NumericType>>
 class KDTree {
   typedef typename std::vector<NumericType>::size_type SizeType;
@@ -120,12 +123,12 @@ public:
     auto best =
         std::pair{std::numeric_limits<NumericType>::infinity(), rootNode};
     traverseDown(rootNode, best, x);
-    return std::pair{best.second->index, Distance(x, best.second->value)};
+    return std::pair{best.second->index, best.first};
   }
 
   [[nodiscard]] std::optional<std::vector<std::pair<SizeType, NumericType>>>
   findKNearest(const ValueType &x, const int k) const {
-    if (!rootNode)
+    if (!rootNode || k <= 0)
       return {};
 
     auto queue = BoundedPQueue<NumericType, Node *>(k);
@@ -135,26 +138,29 @@ public:
     result.reserve(k);
 
     while (!queue.empty()) {
+      const auto squaredDistance = queue.best();
       auto best = queue.dequeueBest();
-      result.emplace_back(best->index, Distance(x, best->value));
+      result.emplace_back(best->index, squaredDistance);
     }
     return result;
   }
 
   [[nodiscard]] std::optional<std::vector<std::pair<SizeType, NumericType>>>
-  findNearestWithinRadius(const ValueType &x, const NumericType radius) const {
-    if (!rootNode)
+  findNearestWithinRadius(const ValueType &x,
+                          const NumericType radiusSquared) const {
+    if (!rootNode || radiusSquared < 0 || std::isnan(radiusSquared))
       return {};
 
-    auto queue = ClampedPQueue<NumericType, Node *>(radius);
+    auto queue = ClampedPQueue<NumericType, Node *>(radiusSquared);
     traverseDown(rootNode, queue, x);
 
     auto result = std::vector<std::pair<SizeType, NumericType>>();
     result.reserve(queue.size());
 
     while (!queue.empty()) {
+      const auto squaredDistance = queue.best();
       auto best = queue.dequeueBest();
-      result.emplace_back(best->index, Distance(x, best->value));
+      result.emplace_back(best->index, squaredDistance);
     }
     return result;
   }
@@ -330,7 +336,8 @@ private:
 
     int axis = currentNode->axis;
 
-    queue.enqueue(std::pair{Distance(x, currentNode->value), currentNode});
+    queue.enqueue(
+        std::pair{SquaredDistance(x, currentNode->value), currentNode});
 
     bool isLeft;
     if (x[axis] < currentNode->value[axis]) {
@@ -355,7 +362,9 @@ private:
                    distanceToHyperplane < queue.worst();
     } else if constexpr (std::is_same_v<Q,
                                         ClampedPQueue<NumericType, Node *>>) {
-      intersects = distanceToHyperplane < queue.worst();
+      // Radius searches must visit every intersecting subtree, even when all
+      // points found so far are closer than the requested radius.
+      intersects = distanceToHyperplane <= queue.thresholdValue();
     }
 
     if (intersects) {
@@ -395,11 +404,6 @@ private:
       norm += scalingFactors[i] * scalingFactors[i] * (pVecA[i] - pVecB[i]) *
               (pVecA[i] - pVecB[i]);
     return norm;
-  }
-
-  [[nodiscard]] NumericType Distance(const ValueType &pVecA,
-                                     const ValueType &pVecB) const {
-    return std::sqrt(SquaredDistance(pVecA, pVecB));
   }
 
   /****************************************************************************
