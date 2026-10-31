@@ -267,11 +267,11 @@ __both__ bool IsNormalized(const VectorType<NumericType, D> &vec,
 }
 
 template <class T> __both__ Vec2D<T> RotateLeft(const Vec2D<T> &v) noexcept {
-  return Vec2D<T>(-v[1], v[0]);
+  return Vec2D<T>{-v[1], v[0]};
 }
 
 template <class T> Vec2D<T> __both__ RotateRight(const Vec2D<T> &v) noexcept {
-  return Vec2D<T>(v[1], -v[0]);
+  return Vec2D<T>{v[1], -v[0]};
 }
 
 template <class T, size_t D>
@@ -344,10 +344,14 @@ __both__ size_t MaxIndex(const VectorType<T, D> &v) noexcept {
   return idx;
 }
 
+// Reads four points: whether v[3] lies on the side of (v[1] - v[0]) x
+// (v[2] - v[0]), the orientation of a tetrahedron.
 template <class T> __both__ bool Orientation(const Vec3D<T> *v) noexcept {
   return DotProduct(CrossProduct(v[1] - v[0], v[2] - v[0]), v[3] - v[0]) >= -0.;
 }
 
+// Reads three points: whether v[2] lies left of the line from v[0] to v[1],
+// the orientation of a triangle.
 template <class T> __both__ bool Orientation(const Vec2D<T> *v) noexcept {
   return DotProduct(RotateLeft(v[1] - v[0]), v[2] - v[0]) >= -0.;
 }
