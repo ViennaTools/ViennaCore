@@ -71,4 +71,11 @@ int main() {
     VC_TEST_ASSERT((*retrievedScalars)[i] ==
                    appendData.getScalarData("TestScalars2")->at(i));
   }
+
+  // addToScalarData checks its index with assert, which vcPointData.hpp,
+  // included first here, has to declare itself
+  PointData<double> sumData;
+  sumData.insertNextScalarData({1.0, 2.0}, "Sum");
+  sumData.addToScalarData(0, 1, 0.5);
+  VC_TEST_ASSERT(sumData.getScalarData("Sum")->at(1) == 2.5);
 }
