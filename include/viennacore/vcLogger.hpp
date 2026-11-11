@@ -66,6 +66,9 @@ class Logger {
   std::string color = "";
   const std::string tab = std::string(4, ' ');
   static LogLevel logLevel;
+  // whether the levels from INTERMEDIATE on write intermediate output: a run
+  // that wants the timings without the files of every step turns it off
+  static bool intermediateOutput;
 
   Logger() {}
 
@@ -105,6 +108,13 @@ public:
 
   static unsigned getLogLevel() { return static_cast<unsigned>(logLevel); }
 
+  // Turn the intermediate output of the levels from INTERMEDIATE on off
+  // (false) or on again (true, the default); the other output of these
+  // levels, as the timings, stays as the level sets it.
+  static void setIntermediateOutput(const bool enable) {
+    intermediateOutput = enable;
+  }
+
   static Logger &getInstance() {
     static Logger instance;
     return instance;
@@ -121,7 +131,8 @@ public:
   }
 
   static bool hasIntermediate() {
-    return getLogLevel() >= static_cast<unsigned>(LogLevel::INTERMEDIATE);
+    return intermediateOutput &&
+           getLogLevel() >= static_cast<unsigned>(LogLevel::INTERMEDIATE);
   }
 
   static bool hasInfo() {
@@ -184,7 +195,7 @@ public:
 
   // Add timing message if log level is high enough.
   template <class Clock>
-  Logger &addTiming(const std::string &s, Timer<Clock> &timer) {
+  Logger &addTiming(const std::string &s, const Timer<Clock> &timer) {
     if (getLogLevel() < 4)
       return *this;
 #pragma omp critical
@@ -333,6 +344,7 @@ inline LogLevel Logger::logLevel = LogLevel::INFO;
 #endif
 inline std::ofstream Logger::logFile;
 inline bool Logger::logToFile = false;
+inline bool Logger::intermediateOutput = true;
 } // namespace viennacore
 
 // Macros for lazy evaluation of log messages

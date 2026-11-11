@@ -40,6 +40,14 @@ int main() {
   logger.setLogLevel(LogLevel::TIMING);
   VC_TEST_ASSERT(logger.getLogLevel() == 4);
 
+  // the timings without the intermediate output of every step
+  VC_TEST_ASSERT(Logger::hasIntermediate() && Logger::hasTiming());
+  Logger::setIntermediateOutput(false);
+  VC_TEST_ASSERT(!Logger::hasIntermediate() && Logger::hasTiming());
+  VC_TEST_ASSERT(Logger::getLogLevel() == 4);
+  Logger::setIntermediateOutput(true);
+  VC_TEST_ASSERT(Logger::hasIntermediate() && Logger::hasTiming());
+
   logger.setLogLevel(LogLevel::DEBUG);
   logger.addDebug("Debug message");
   logger.print(ss);
@@ -52,6 +60,17 @@ int main() {
   logger.print(ss);
 
   VC_TEST_ASSERT(ss.str().find("    Timing message: 1.23") == 0);
+  ss.str("");
+
+  // a timer is reported through a const reference, as a caller that only
+  // reads it holds it
+  Timer<> timer;
+  timer.start();
+  timer.finish();
+  const Timer<> &finished = timer;
+  logger.addTiming("Timer message", finished);
+  logger.print(ss);
+  VC_TEST_ASSERT(ss.str().find("    Timer message took: ") == 0);
   ss.str("");
 
   logger.setLogLevel(LogLevel::INFO);
